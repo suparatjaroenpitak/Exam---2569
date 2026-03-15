@@ -176,6 +176,51 @@ OPEN_SOURCE_LLM_API_KEY=sk_your_api_key_here
 - หากยังไม่ต้องการใช้ฟีเจอร์ AI สามารถเว้นค่านี้ว่างได้ แต่การเรียก API ที่พึ่ง LLM จะล้มเหลวจนกว่าจะตั้งค่า
 - ถาต้องการ ผมช่วยเปลี่ยนพฤติกรรมโค้ดให้คืน HTTP 400 หรือปิดฟีเจอร์ AI แทนการ throw exception — บอกผมได้เลย
 
+การตั้งค่าเพิ่มเติมและตัวอย่างคำสั่งสำหรับ Render (production)
+
+- ชื่อตัวแปรที่แอปอ่านได้มีหลายแบบ ขึ้นกับการตั้งค่าโค้ด: `OPEN_SOURCE_LLM_API_KEY`, `OPEN_ROUTER_API_KEY` หรือ `LLM_API_KEY`.
+  - แนะนำให้ตั้งค่า `OPEN_SOURCE_LLM_API_KEY` เป็นหลัก และถ้าผู้ให้บริการต้องการชื่ออื่น ให้ตั้งค่าเพิ่ม (`OPEN_ROUTER_API_KEY`) ด้วย
+
+- ตัวอย่างการสร้าง/อัปเดต secret ผ่าน Render CLI (ต้องติดตั้ง `render` CLI และล็อกอินก่อน):
+
+```bash
+render login
+# สร้าง secret ครั้งแรก
+render secrets create --service <SERVICE_ID> OPEN_SOURCE_LLM_API_KEY "sk_or_other_provider_your_key_here"
+
+# ถ้าต้องการเพิ่มชื่ออื่นควบคู่กัน (optional)
+render secrets create --service <SERVICE_ID> OPEN_ROUTER_API_KEY "sk_or_other_provider_your_key_here"
+
+# อัพเดตค่าที่มีอยู่แล้ว
+render secrets update --service <SERVICE_ID> OPEN_SOURCE_LLM_API_KEY "<your-new-key>"
+```
+
+- ถ้าตั้งค่าผ่าน Dashboard:
+  1. ไปที่ Render → เลือก Service → Environment
+ 2. Add Environment Variable / Secret → ใส่ `OPEN_SOURCE_LLM_API_KEY` → วางค่า → Save
+ 3. ถ้าใช้ชื่ออื่นในโค้ด ให้เพิ่ม `OPEN_ROUTER_API_KEY` หรือ `LLM_API_KEY` ด้วย
+
+- หลังตั้ง secret แล้วให้สั่ง redeploy (ถ้า `autoDeployTrigger: commit` ไม่ได้เปิดไว้ หรือคุณต้องการ deploy ทันที):
+
+  - Manual deploy (Dashboard): Service → Deploys → Manual Deploy → Deploy Latest Commit
+  - หรือ commit `render.yaml` แล้ว `git push` ขึ้น remote เพื่อให้ Render ทำ auto-deploy:
+
+```powershell
+git add render.yaml
+git commit -m "Update env vars: add OPEN_SOURCE_LLM_API_KEY (secret stored in Render)"
+git push origin <your-branch>
+```
+
+- ตรวจสอบผลการ deploy:
+  - ดู Deploy logs ใน Dashboard ว่า build & start สำเร็จ
+  - ทดสอบ endpoint ที่ healthCheckPath (`/login`) หรือหน้าเว็บหลัก
+
+- ข้อควรระวังความปลอดภัย:
+  - ห้าม commit คีย์จริงลงใน repo — ถามพบคีย์หลุด ให้ rotate ทันที
+  - ถ้าคีย์ถูก commit ไปแล้ว ให้ลบ commit ที่มีคีย์และเปลี่ยนคีย์ (rotate)
+
+ถ้าต้องการผมช่วยรัน `git commit` + `git push` จาก repo นี้ และช่วยสังเกตผล deploy บน Render บอกผมได้ (ผมจะแจ้งขั้นตอนและรออนุญาตก่อนจะรันคำสั่งจริง)
+
 วิธีตรวจสอบค่าใน runtime (logs):
 
 - ถ้าเรียกฟีเจอร์ AI แล้วได้ error ให้ดู logs ของ server จะเห็นข้อความ `Missing OPEN_SOURCE_LLM_API_KEY configuration` หรือข้อความจากการเรียก API ที่ล้มเหลว
