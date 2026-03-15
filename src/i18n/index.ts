@@ -65,11 +65,12 @@ const SUBCATEGORY_KEYS: Partial<Record<ExamSubcategory, TranslationKey>> = {
   "Fill in the Blank": "subcategory.fill-in-the-blank",
   "Passage Reading": "subcategory.passage-reading",
   "Story Questions": "subcategory.story-questions",
-  "Civil Service Regulations": "subcategory.civil-service-regulations",
-  "Government Ethics": "subcategory.government-ethics",
-  "Government Discipline": "subcategory.government-discipline",
-  "Public Administration": "subcategory.public-administration",
-  "Good Governance Principles": "subcategory.good-governance-principles"
+  "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534": "subcategory.state-administration-act-2534",
+  "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546": "subcategory.good-governance-decree-2546",
+  "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539": "subcategory.administrative-procedure-act-2539",
+  "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)": "subcategory.criminal-code-2499-offences-of-office",
+  "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่": "subcategory.official-liability-and-tort",
+  "พ.ร.บ.มาตราฐานทางจริยธรรม 2562": "subcategory.ethical-standards-act-2562"
 };
 
 const DIFFICULTY_KEYS: Record<QuestionDifficulty, TranslationKey> = {

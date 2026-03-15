@@ -46,11 +46,12 @@ export type ExamSubcategory =
   | "Fill in the Blank"
   | "Passage Reading"
   | "Story Questions"
-  | "Civil Service Regulations"
-  | "Government Ethics"
-  | "Government Discipline"
-  | "Public Administration"
-  | "Good Governance Principles";
+  | "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534"
+  | "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546"
+  | "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539"
+  | "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)"
+  | "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่"
+  | "พ.ร.บ.มาตราฐานทางจริยธรรม 2562";
 export type QuestionDifficulty = "easy" | "medium" | "hard";
 export type AnswerKey = "A" | "B" | "C" | "D";
 export type QuestionSource = "pdf" | "ai" | "manual";

@@ -41,6 +41,13 @@ function stripCodeFence(input: string) {
   return input.replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
 }
 
+function getSubjectGuideText() {
+  return EXAM_CATEGORIES.map((subject) => {
+    const subcategories = SUBJECT_SUBCATEGORIES[subject].join(", ");
+    return `- ${subject}: ${subcategories}`;
+  }).join("\n");
+}
+
 async function callJsonModel<T>(schema: z.ZodSchema<T>, prompt: string, systemPrompt: string) {
   if (!env.llmApiKey) {
     throw new Error("Missing OPEN_SOURCE_LLM_API_KEY configuration");
@@ -90,6 +97,8 @@ export async function classifyQuestion(questionText: string): Promise<{ subject:
   const prompt = [
     "Classify the following Thai civil service exam question.",
     `Supported subjects: ${EXAM_CATEGORIES.join(", ")}`,
+    "Use only these supported subcategories for each subject:",
+    getSubjectGuideText(),
     "Return strict JSON with keys: subject, subcategory.",
     `Question: ${questionText}`
   ].join("\n");
@@ -110,6 +119,8 @@ export async function validateImportedQuestion(candidate: string) {
   const prompt = [
     "Validate whether this text is a valid Thai civil service multiple choice exam question.",
     `Supported subjects: ${EXAM_CATEGORIES.join(", ")}`,
+    "Use only these supported subcategories for each subject:",
+    getSubjectGuideText(),
     "Rules: reject if not multiple choice, fewer than 4 choices, not an exam question, or irrelevant.",
     "Return strict JSON with these keys:",
     "isQuestion, isMultipleChoice, hasFourChoices, isRelevant, subject, subcategory, question, choices, correct_answer, explanation, rejectionReason",
@@ -158,6 +169,7 @@ export async function generateQuestionsWithAI(input: {
     "Generate Thai civil service exam practice questions as strict JSON.",
     `Subject: ${input.category}`,
     `Subcategory: ${input.subcategory}`,
+    `Allowed subcategories for ${input.category}: ${SUBJECT_SUBCATEGORIES[input.category].join(", ")}`,
     `Difficulty: ${input.difficulty}`,
     `Question count: ${input.count}`,
     "Return an array only.",
