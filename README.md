@@ -1,0 +1,397 @@
+# ระบบฝึกทำข้อสอบออนไลน์
+
+โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, ตรวจสอบข้อสอบด้วย AI, จัดหมวดหมู่อัตโนมัติ และสร้างข้อสอบใหม่ผ่าน OpenAI-compatible LLM endpoint
+
+## ความสามารถหลัก
+
+- สมัครสมาชิก, เข้าสู่ระบบ และออกจากระบบ
+- แยกสิทธิ์ `user` และ `admin`
+- สลับภาษาได้ 2 ภาษา: ไทย และ English
+- สลับธีมได้ 2 โหมด: สว่าง และ มืด
+- สุ่มข้อสอบตามวิชา หัวข้อย่อย จำนวนข้อ และระดับความยาก
+- ระบบจับเวลาในการสอบและตรวจคะแนนอัตโนมัติ
+- ดูประวัติการสอบย้อนหลังและสถิติผลลัพธ์แยกตามวิชาและหัวข้อย่อย
+- ผู้ดูแลสามารถนำเข้าข้อสอบจาก PDF
+- ผู้ดูแลสามารถสร้างข้อสอบใหม่ด้วย AI ตามวิชา/หัวข้อย่อย/ระดับความยาก
+- AI classifier สำหรับจัดประเภทข้อสอบเป็นวิชาและหัวข้อย่อย
+- AI validation pipeline สำหรับตรวจว่าข้อสอบจาก PDF เป็นข้อสอบแบบปรนัยที่ถูกต้องหรือไม่
+- จัดเก็บคำถาม ผู้ใช้ และประวัติการสอบในไฟล์ Excel
+
+## โครงสร้างวิชา ก.พ.
+
+ระบบรองรับ 4 วิชาหลักตามโครงสร้างที่กำหนด
+
+### 1. Analytical Thinking
+
+- จำนวนมาตรฐาน: 50 ข้อ
+- เวลาอ้างอิง: 60 นาที
+- หัวข้อย่อย:
+- Percentage
+- Ratio
+- Proportion
+- Equation
+- Speed Distance Time
+- Number Comparison
+- Data Tables
+- Arithmetic Sequence
+- Power Sequence
+- Fraction Sequence
+- Mixed Sequence
+- Multi-sequence
+- Symbolic Conditions
+- Language Conditions
+- Relationship Finding
+- Logical Reasoning
+- Odd-one-out
+- Truth Tables
+- Tables
+- Graphs
+- Charts
+- Data Interpretation
+
+### 2. Thai Language
+
+- จำนวนมาตรฐาน: 25 ข้อ
+- หัวข้อย่อย:
+- Reading Comprehension
+- Analyze Article
+- Summarize
+- Interpretation
+- Correct Word
+- Incorrect Word
+- Thai Royal Vocabulary
+- Sentence Structure
+- Conjunction Usage
+- Complete Sentence
+- Synonym
+- Antonym
+- Word Groups
+
+### 3. English Language
+
+- จำนวนมาตรฐาน: 25 ข้อ
+- หัวข้อย่อย:
+- Tense
+- Preposition
+- Conjunction
+- Article
+- Vocabulary Synonym
+- Vocabulary Antonym
+- Fill in the Blank
+- Passage Reading
+- Story Questions
+
+### 4. Government Law & Ethics
+
+- จำนวนมาตรฐาน: 25 ข้อ
+- หัวข้อย่อย:
+- Civil Service Regulations
+- Government Ethics
+- Government Discipline
+- Public Administration
+- Good Governance Principles
+
+## เทคโนโลยีที่ใช้
+
+- Next.js 15
+- React 19
+- TypeScript
+- Tailwind CSS
+- Route Handlers ของ Next.js สำหรับ API
+- `xlsx` สำหรับจัดเก็บข้อมูลแบบ Excel
+- `pdf-parse` สำหรับอ่านไฟล์ PDF
+- `jose` และ `bcryptjs` สำหรับ auth และ password hashing
+- `zod` สำหรับ validate payload ของ API
+
+## โครงสร้างโปรเจกต์
+
+```text
+src/
+  app/                  หน้าเว็บหลักและ layout
+  components/           UI components แยกตาม feature
+  hooks/                React hooks
+  i18n/                 ข้อความหลายภาษาและ helper
+  lib/                  constants, types, guards, auth utilities
+  services/             business logic และ Excel storage
+  utils/                helper functions ทั่วไป
+data/                   ไฟล์ Excel สำหรับ questions, users, history
+```
+
+## การตั้งค่า Environment
+
+คัดลอกไฟล์ `.env.example` เป็น `.env.local`
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+ค่าที่ต้องตั้งมีดังนี้
+
+```env
+JWT_SECRET=replace-with-a-long-random-secret
+OPEN_SOURCE_LLM_API_KEY=
+OPEN_SOURCE_LLM_BASE_URL=https://openrouter.ai/api/v1
+OPEN_SOURCE_LLM_MODEL=meta-llama/llama-3.1-8b-instruct:free
+DEFAULT_ADMIN_EMAIL=admin@example.com
+DEFAULT_ADMIN_PASSWORD=Admin12345!
+```
+
+คำอธิบายตัวแปรสำคัญ
+
+- `JWT_SECRET`: ใช้สำหรับ sign token ควรตั้งเป็นค่ายาวและคาดเดายาก
+- `OPEN_SOURCE_LLM_API_KEY`: API key สำหรับบริการ LLM ที่รองรับ OpenAI-compatible API
+- `OPEN_SOURCE_LLM_BASE_URL`: base URL ของผู้ให้บริการ LLM
+- `OPEN_SOURCE_LLM_MODEL`: ชื่อโมเดลที่ต้องการใช้สร้างข้อสอบ
+- `DEFAULT_ADMIN_EMAIL`: อีเมลของ admin แรกที่ระบบจะ bootstrap ให้
+- `DEFAULT_ADMIN_PASSWORD`: รหัสผ่านของ admin แรก
+
+## การติดตั้งและรันโปรเจกต์
+
+ติดตั้ง dependencies
+
+```bash
+npm install
+```
+
+รันโหมดพัฒนา
+
+```bash
+npm run dev
+```
+
+build production
+
+```bash
+npm run build
+```
+
+เริ่ม production server หลัง build
+
+```bash
+npm run start
+```
+
+ตรวจ lint
+
+```bash
+npm run lint
+```
+
+## บัญชีผู้ดูแลระบบเริ่มต้น
+
+ถ้ายังไม่ได้เปลี่ยนค่าใน `.env.local` ระบบจะใช้ค่าตาม `.env.example`
+
+- Email: `admin@example.com`
+- Password: `Admin12345!`
+
+หมายเหตุ: บัญชี admin แรกถูก bootstrap จาก environment variables ไม่ได้ hardcode ไว้ในหน้า UI
+
+## การสลับภาษาและธีม
+
+ในหน้า Landing Page, Login/Register และหน้าภายในระบบ จะมีตัวควบคุมสำหรับ:
+
+- สลับภาษา `TH` และ `EN`
+- สลับธีม `สว่าง` และ `มืด`
+
+ค่าที่เลือกจะถูกเก็บใน `localStorage` ของเบราว์เซอร์ และถูกนำกลับมาใช้อัตโนมัติเมื่อเปิดเว็บใหม่
+
+## การจัดเก็บข้อมูล
+
+ระบบเก็บข้อมูลในไฟล์ Excel ภายใต้โฟลเดอร์ `data/`
+
+- ข้อสอบ
+- ผู้ใช้
+- ประวัติการทำข้อสอบ
+
+โครงสร้างหลักของ `questions.xlsx`
+
+- id
+- subject
+- category
+- subcategory
+- question
+- choice_a
+- choice_b
+- choice_c
+- choice_d
+- correct_answer
+- explanation
+- difficulty
+- source
+- createdAt
+
+ถ้าไฟล์ยังไม่มี ระบบจะสร้างให้ตอนที่มีการเขียนข้อมูลครั้งแรก
+
+## ฟีเจอร์สำหรับผู้ใช้
+
+### 1. สมัครและเข้าสู่ระบบ
+
+ผู้ใช้ทั่วไปสามารถสมัครสมาชิกและเข้าสู่ระบบเพื่อเข้าหน้า dashboard และทำข้อสอบได้
+
+### 2. Dashboard
+
+หน้า dashboard แสดงข้อมูลหลัก เช่น
+
+- จำนวนครั้งที่ทำข้อสอบ
+- คะแนนสูงสุด
+- คะแนนเฉลี่ย
+- ฟอร์มสร้างชุดข้อสอบแบบจับเวลา
+- ตารางประวัติการสอบ
+
+### 3. การทำข้อสอบ
+
+ผู้ใช้สามารถตั้งค่าได้ว่า:
+
+- จะทำข้อสอบวิชาใด
+- จะเลือกหัวข้อย่อยเฉพาะหรือทำแบบรวมทั้งวิชา
+- ต้องการกี่ข้อ
+- ต้องการโฟกัสระดับความยากแบบใด
+
+เมื่อเริ่มสอบ ระบบจะ:
+
+- สุ่มข้อสอบตามเงื่อนไข
+- เริ่มจับเวลา
+- ให้ผู้ใช้เปลี่ยนข้อไปมาได้
+- ส่งคำตอบเพื่อตรวจคะแนน
+- แสดงเฉลยและคำอธิบายหลังส่งข้อสอบ
+- แสดงผลการทำข้อสอบแยกตามวิชาและหัวข้อย่อย
+
+## ฟีเจอร์สำหรับผู้ดูแลระบบ
+
+### 1. ภาพรวมคลังข้อสอบ
+
+หน้า admin แสดง:
+
+- จำนวนข้อสอบทั้งหมด
+- จำนวนข้อสอบแยกตามหมวดวิชา
+- จำนวนข้อสอบตามระดับความยาก
+
+### 2. นำเข้าข้อสอบจาก PDF
+
+pipeline ปัจจุบัน
+
+- อัปโหลด PDF
+- ดึงข้อความด้วย `pdf-parse`
+- แยกข้อความเป็น candidate question blocks
+- ส่งแต่ละ block ให้ AI ตรวจสอบว่าเป็นข้อสอบจริงหรือไม่
+- AI จัดวิชาและหัวข้อย่อยอัตโนมัติ
+- บันทึกเฉพาะข้อที่ผ่าน validation ลง Excel
+
+ตัวอย่างเรียก API:
+
+```ts
+const formData = new FormData();
+formData.append("file", file);
+formData.append("difficulty", "medium");
+
+await fetch("/api/admin/import-pdf", {
+  method: "POST",
+  body: formData
+});
+```
+
+### 3. สร้างข้อสอบด้วย AI
+
+ผู้ดูแลสามารถเลือกได้
+
+- subject
+- subcategory
+- difficulty
+- number of questions
+
+ตัวอย่างเรียก API:
+
+```ts
+await fetch("/api/admin/generate-questions", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    category: "Analytical Thinking",
+    subcategory: "Arithmetic Sequence",
+    count: 20,
+    difficulty: "hard"
+  })
+});
+```
+
+## AI Utilities
+
+ระบบมี AI utility สำคัญดังนี้
+
+- `classifyQuestion()` สำหรับจัดประเภทข้อสอบเป็นวิชาและหัวข้อย่อย
+- `validateImportedQuestion()` สำหรับตรวจสอบข้อสอบจาก PDF ว่าผ่านเงื่อนไขหรือไม่
+- `generateQuestionsWithAI()` สำหรับสร้างข้อสอบแบบหลายตัวเลือกตามเงื่อนไขที่ผู้ดูแลเลือก
+
+ตัวอย่าง `classifyQuestion()`
+
+```ts
+const result = await classifyQuestion("ข้อใดเป็นลำดับเลขคณิตที่ถูกต้อง...");
+// { subject: "Analytical Thinking", subcategory: "Arithmetic Sequence" }
+```
+
+ตัวอย่าง exam randomizer
+
+```ts
+const session = await createExamSession({
+  category: "Analytical Thinking",
+  subcategory: "all",
+  count: 50,
+  difficulty: "medium"
+});
+```
+
+ตัวอย่าง timer system
+
+```ts
+const durationSeconds = getExamDurationSeconds("Analytical Thinking", 50);
+```
+
+ตัวอย่าง grading system
+
+```ts
+const summary = await gradeExamAttempt({
+  userId,
+  category: "Thai Language",
+  subcategory: "all",
+  questionIds,
+  answers,
+  durationSeconds
+});
+```
+
+## เส้นทางหลักของระบบ
+
+- `/` หน้าแรก
+- `/login` หน้าเข้าสู่ระบบ
+- `/register` หน้าสมัครสมาชิก
+- `/dashboard` หน้า dashboard ของผู้ใช้
+- `/exam` หน้าทำข้อสอบ
+- `/admin` หน้าผู้ดูแลระบบ
+
+## API สำคัญ
+
+- `/api/auth/login`
+- `/api/auth/logout`
+- `/api/auth/register`
+- `/api/auth/me`
+- `/api/exam/create`
+- `/api/exam/submit`
+- `/api/history`
+- `/api/admin/import-pdf`
+- `/api/admin/generate-questions`
+
+## การตรวจสอบก่อนส่งงาน
+
+คำสั่งที่ใช้ตรวจสอบโปรเจกต์
+
+```bash
+npm run lint
+npm run build
+```
+
+## หมายเหตุเพิ่มเติม
+
+- ระบบนี้ออกแบบให้ทำงานภายใน workspace ปัจจุบัน
+- เส้นทาง admin และ admin API ถูกป้องกันด้วย role checks
+- ใช้ Excel เป็น storage หลักตามข้อกำหนดของโปรเจกต์
+- ถ้าต้องการใช้งาน AI generation จริง ต้องตั้งค่า LLM endpoint และ API key ให้ถูกต้อง

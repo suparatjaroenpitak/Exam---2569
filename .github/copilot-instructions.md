@@ -1,0 +1,5 @@
+- Build inside the current workspace root.
+- Prefer App Router and route handlers.
+- Keep storage in Excel files under `data/`.
+- Protect `/admin` and admin APIs with role checks.
+- Keep components modular and resource usage low.

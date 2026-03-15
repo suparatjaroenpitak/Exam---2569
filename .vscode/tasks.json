@@ -1,0 +1,46 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install dependencies",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+				"install"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Type check project",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				".\\node_modules\\typescript\\bin\\tsc",
+				"--noEmit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Build project",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				".\\node_modules\\next\\dist\\bin\\next",
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Lint project",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				".\\node_modules\\eslint\\bin\\eslint.js",
+				".",
+				"--max-warnings=0"
+			],
+			"isBackground": false
+		}
+	]
+}
