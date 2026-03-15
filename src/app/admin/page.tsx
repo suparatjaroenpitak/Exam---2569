@@ -2,12 +2,14 @@ import { AppShell } from "@/components/app-shell";
 import { AiGeneratorForm } from "@/components/admin/ai-generator-form";
 import { AdminOverview } from "@/components/admin/admin-overview";
 import { PdfImportForm } from "@/components/admin/pdf-import-form";
+import { QuestionBankList } from "@/components/admin/question-bank-list";
 import { requireAdminPage } from "@/lib/server-guards";
-import { getQuestionStats } from "@/services/question-service";
+import { getQuestionStats, getQuestions } from "@/services/question-service";
 
 export default async function AdminPage() {
   const user = await requireAdminPage();
   const stats = await getQuestionStats();
+  const questions = await getQuestions();
 
   return (
     <AppShell
@@ -23,6 +25,7 @@ export default async function AdminPage() {
           <PdfImportForm />
           <AiGeneratorForm />
         </div>
+        <QuestionBankList questions={[...questions].reverse()} />
       </div>
     </AppShell>
   );

@@ -11,14 +11,14 @@ import { getCategoryLabel, getDifficultyLabel, getSubcategoryLabel } from "@/i18
 import { formatSeconds } from "@/utils/format";
 import type { ExamCategory, ExamSession, ExamSubmissionSummary, ExamSubcategory, QuestionDifficulty } from "@/lib/types";
 
-export default function ExamWorkspace() {
+export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }) {
   const { locale, translate } = usePreferences();
   const searchParams = useSearchParams();
   const initialCategory = useMemo(
     () => (searchParams.get("category") as ExamCategory) || EXAM_CATEGORIES[0],
     [searchParams]
   );
-  const initialCount = useMemo(() => Number(searchParams.get("count")) || EXAM_LENGTH_OPTIONS[0], [searchParams]);
+  const initialCount = useMemo(() => searchParams.get("count") || "all", [searchParams]);
   const initialDifficulty = useMemo(
     () => (searchParams.get("difficulty") as QuestionDifficulty) || DIFFICULTY_OPTIONS[1],
     [searchParams]
@@ -30,8 +30,9 @@ export default function ExamWorkspace() {
 
   const [category, setCategory] = useState<ExamCategory>(initialCategory);
   const [subcategory, setSubcategory] = useState<ExamSubcategory | "all">(initialSubcategory);
-  const [count, setCount] = useState(initialCount);
+  const [count, setCount] = useState<string>(initialCount);
   const [difficulty, setDifficulty] = useState<QuestionDifficulty>(initialDifficulty);
+  const [durationMinutesOverride, setDurationMinutesOverride] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<ExamSession | null>(null);
@@ -44,7 +45,13 @@ export default function ExamWorkspace() {
     try {
       const response = await apiRequest<{ session: ExamSession }>("/api/exam/create", {
         method: "POST",
-        body: JSON.stringify({ category, subcategory, count, difficulty })
+        body: JSON.stringify({
+          category,
+          subcategory,
+          count: count === "all" ? undefined : Number(count),
+          difficulty,
+          durationSecondsOverride: isAdmin && durationMinutesOverride ? Number(durationMinutesOverride) * 60 : undefined
+        })
       });
       setSummary(null);
       setSession(response.session);
@@ -65,7 +72,7 @@ export default function ExamWorkspace() {
               <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("exam.generate")}</h3>
             </div>
             <div className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white dark:bg-slate-800">
-              {translate("exam.timer-preview")}: {formatSeconds(count * 60)}
+              {translate("exam.timer-preview")}: {durationMinutesOverride ? formatSeconds(Number(durationMinutesOverride) * 60) : count === "all" ? translate("exam.all-available") : formatSeconds(Number(count) * 60)}
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
@@ -107,10 +114,11 @@ export default function ExamWorkspace() {
               <select
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 value={count}
-                onChange={(event) => setCount(Number(event.target.value))}
+                onChange={(event) => setCount(event.target.value)}
               >
+                <option value="all">{translate("exam.all-available")}</option>
                 {EXAM_LENGTH_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
+                  <option key={item} value={String(item)}>
                     {item}
                   </option>
                 ))}
@@ -130,6 +138,19 @@ export default function ExamWorkspace() {
                 ))}
               </select>
             </label>
+            {isAdmin ? (
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("exam.admin-timer-minutes")}</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={durationMinutesOverride}
+                  onChange={(event) => setDurationMinutesOverride(event.target.value)}
+                  placeholder={translate("exam.admin-timer-placeholder")}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                />
+              </label>
+            ) : null}
           </div>
           {error ? <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
           <button
@@ -143,7 +164,7 @@ export default function ExamWorkspace() {
         </section>
       ) : null}
 
-      {session && !summary ? <ExamRunner session={session} onComplete={(result) => setSummary(result)} /> : null}
+      {session && !summary ? <ExamRunner session={session} canAdjustTimer={isAdmin} onComplete={(result) => setSummary(result)} /> : null}
 
       {summary ? (
         <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">

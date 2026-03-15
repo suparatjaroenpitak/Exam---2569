@@ -13,7 +13,7 @@ export default async function ExamPage() {
       titleKey="exam.title"
       subtitleKey="exam.subtitle"
     >
-      <ExamWorkspace />
+      <ExamWorkspace isAdmin={user.role === "admin"} />
     </AppShell>
   );
 }

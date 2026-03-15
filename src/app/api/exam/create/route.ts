@@ -9,9 +9,8 @@ import { createExamSession } from "@/services/exam-service";
 const createExamSchema = z.object({
   category: z.enum(EXAM_CATEGORIES),
   subcategory: z.string().optional(),
-  count: z.number().int().refine((value) => EXAM_LENGTH_OPTIONS.includes(value as (typeof EXAM_LENGTH_OPTIONS)[number]), {
-    message: "Invalid question count"
-  }),
+  count: z.number().int().positive().optional(),
+  durationSecondsOverride: z.number().int().positive().max(24 * 60 * 60).optional(),
   difficulty: z.enum(DIFFICULTY_OPTIONS).optional()
 });
 
@@ -33,6 +32,7 @@ export async function POST(request: NextRequest) {
       category: payload.category,
       subcategory: payload.subcategory as Parameters<typeof createExamSession>[0]["subcategory"],
       count: payload.count,
+      durationSecondsOverride: guard.user.role === "admin" ? payload.durationSecondsOverride : undefined,
       difficulty: payload.difficulty
     });
     return NextResponse.json({ session });

@@ -13,10 +13,12 @@ import type { ExamAnswer, ExamSession, ExamSubmissionSummary } from "@/lib/types
 
 export function ExamRunner(props: {
   session: ExamSession;
+  canAdjustTimer?: boolean;
   onComplete: (summary: ExamSubmissionSummary) => void;
 }) {
   const { locale, translate } = usePreferences();
   const [submitting, setSubmitting] = useState(false);
+  const [timerMinutes, setTimerMinutes] = useState("");
 
   async function handleSubmit(answers: ExamAnswer[]) {
     if (submitting) {
@@ -70,6 +72,34 @@ export function ExamRunner(props: {
             </span>
             <span>{exam.answeredCount} {translate("exam.answered")}</span>
           </div>
+          {props.canAdjustTimer ? (
+            <div className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl bg-amber-50 px-4 py-3 dark:bg-slate-900">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("exam.admin-adjust-timer")}</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={timerMinutes}
+                  onChange={(event) => setTimerMinutes(event.target.value)}
+                  placeholder={translate("exam.admin-timer-placeholder")}
+                  className="w-40 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!timerMinutes) {
+                    return;
+                  }
+
+                  exam.setRemainingTime(Number(timerMinutes) * 60);
+                }}
+                className="rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
+              >
+                {translate("exam.apply-timer")}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <QuestionCard

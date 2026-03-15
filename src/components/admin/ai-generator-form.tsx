@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { apiRequest } from "@/api/client";
@@ -9,6 +10,7 @@ import { getCategoryLabel, getDifficultyLabel, getSubcategoryLabel, translateApi
 import type { ExamCategory, ExamSubcategory, QuestionDifficulty } from "@/lib/types";
 
 export function AiGeneratorForm() {
+  const router = useRouter();
   const { locale, translate } = usePreferences();
   const [category, setCategory] = useState<ExamCategory>(EXAM_CATEGORIES[0]);
   const [subcategory, setSubcategory] = useState<ExamSubcategory>(SUBJECT_SUBCATEGORIES[EXAM_CATEGORIES[0]][0]);
@@ -30,6 +32,7 @@ export function AiGeneratorForm() {
         body: JSON.stringify({ category, subcategory, count, difficulty })
       });
       setMessage(translateApiMessage(locale, response.message));
+      router.refresh();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : translate("message.generation-failed"));
     } finally {

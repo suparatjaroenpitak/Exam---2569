@@ -47,6 +47,14 @@ function invalidateQuestionCache() {
   questionCache = null;
 }
 
+function buildQuestionFingerprint(
+  row: Pick<QuestionRecord, "question" | "choice_a" | "choice_b" | "choice_c" | "choice_d" | "correct_answer">
+) {
+  return [row.question, row.choice_a, row.choice_b, row.choice_c, row.choice_d, row.correct_answer]
+    .map((value) => String(value).replace(/\s+/g, " ").trim().toLowerCase())
+    .join("||");
+}
+
 export async function getQuestions(filters?: { category?: ExamCategory; subject?: ExamCategory; subcategory?: ExamSubcategory | "all"; difficulty?: QuestionDifficulty }) {
   const questions = await getAllQuestions();
   const subject = filters?.subject ?? filters?.category;
@@ -69,13 +77,39 @@ export async function getQuestions(filters?: { category?: ExamCategory; subject?
 }
 
 export async function appendStructuredQuestions(rows: Array<Omit<QuestionRecord, "id" | "createdAt">>) {
-  const preparedRows: QuestionRecord[] = rows.map((row) => ({
-    ...row,
-    subject: row.subject,
-    category: row.subject,
-    id: createQuestionId(),
-    createdAt: new Date().toISOString()
-  }));
+  const existing = await getAllQuestions();
+  const existingFingerprints = new Set(existing.map((row) => buildQuestionFingerprint(row)));
+  const incomingFingerprints = new Set<string>();
+
+  const preparedRows: QuestionRecord[] = rows
+    .filter((row) => {
+      const fingerprint = buildQuestionFingerprint({
+        question: row.question,
+        choice_a: row.choice_a,
+        choice_b: row.choice_b,
+        choice_c: row.choice_c,
+        choice_d: row.choice_d,
+        correct_answer: row.correct_answer
+      });
+
+      if (existingFingerprints.has(fingerprint) || incomingFingerprints.has(fingerprint)) {
+        return false;
+      }
+
+      incomingFingerprints.add(fingerprint);
+      return true;
+    })
+    .map((row) => ({
+      ...row,
+      subject: row.subject,
+      category: row.subject,
+      id: createQuestionId(),
+      createdAt: new Date().toISOString()
+    }));
+
+  if (preparedRows.length === 0) {
+    return [];
+  }
 
   await appendQuestions(preparedRows);
   invalidateQuestionCache();

@@ -4,7 +4,9 @@ import pdfParse from "pdf-parse";
 import { requireApiAdmin } from "@/lib/api-guards";
 import { splitPdfIntoQuestionCandidates, parseCandidate, classifyByKeywords, estimateDifficulty } from "@/lib/pdf-question-parser";
 import { normalizeSubject, getDefaultSubcategory } from "@/lib/constants";
+import { env } from "@/lib/env";
 import type { QuestionDifficulty, ExamSubject, AnswerKey, QuestionRecord } from "@/lib/types";
+import { extractQuestionsFromPdfWithOpenAI } from "@/services/ai-question-service";
 import { appendStructuredQuestions } from "@/services/exam-service";
 
 export async function POST(request: NextRequest) {
@@ -17,6 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
+    const parser = formData.get("parser");
 
     if (!(file instanceof File)) {
       return NextResponse.json({ message: "Invalid import payload" }, { status: 400 });
@@ -24,33 +27,36 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const document = await pdfParse(buffer);
-    const candidates = splitPdfIntoQuestionCandidates(document.text).slice(0, 200);
+    const requestedOpenAI = parser === "openai";
+    const usedOpenAI = requestedOpenAI && Boolean(env.openAiApiKey);
 
-    const parsed = candidates.map((candidate) => parseCandidate(candidate));
+    const structured: Array<Omit<QuestionRecord, "id" | "createdAt">> = usedOpenAI
+      ? await extractQuestionsFromPdfWithOpenAI({ text: document.text, maxQuestions: 200 })
+      : splitPdfIntoQuestionCandidates(document.text)
+          .slice(0, 200)
+          .map((candidate) => parseCandidate(candidate))
+          .map((p) => {
+            if (!p.choices || p.choices.length !== 4) return null;
+            const classification = classifyByKeywords(p.raw || p.question);
+            const difficulty = estimateDifficulty(p.question) as QuestionDifficulty;
 
-    const structured: Array<Omit<QuestionRecord, "id" | "createdAt">> = parsed
-      .map((p) => {
-        if (!p.choices || p.choices.length !== 4) return null;
-        const classification = classifyByKeywords(p.raw || p.question);
-        const difficulty = estimateDifficulty(p.question) as QuestionDifficulty;
-
-        const normalized = (normalizeSubject(classification.subject) ?? "Analytical Thinking") as ExamSubject;
-        return {
-          subject: normalized,
-          category: normalized,
-          subcategory: (classification.subcategory ?? getDefaultSubcategory(normalized)) as QuestionRecord["subcategory"],
-          question: p.question,
-          choice_a: p.choices[0] || "",
-          choice_b: p.choices[1] || "",
-          choice_c: p.choices[2] || "",
-          choice_d: p.choices[3] || "",
-          correct_answer: (p.correct_answer as AnswerKey) || "A",
-          explanation: "Imported from PDF",
-          difficulty,
-          source: "pdf" as const
-        };
-      })
-      .filter((r): r is Exclude<typeof r, null> => r !== null);
+            const normalized = (normalizeSubject(classification.subject) ?? "Analytical Thinking") as ExamSubject;
+            return {
+              subject: normalized,
+              category: normalized,
+              subcategory: (classification.subcategory ?? getDefaultSubcategory(normalized)) as QuestionRecord["subcategory"],
+              question: p.question,
+              choice_a: p.choices[0] || "",
+              choice_b: p.choices[1] || "",
+              choice_c: p.choices[2] || "",
+              choice_d: p.choices[3] || "",
+              correct_answer: (p.correct_answer as AnswerKey) || "A",
+              explanation: "Imported from PDF",
+              difficulty,
+              source: "pdf" as const
+            };
+          })
+          .filter((r): r is Exclude<typeof r, null> => r !== null);
 
     if (structured.length === 0) {
       return NextResponse.json({ message: "No valid questions were parsed from the PDF" }, { status: 400 });
@@ -59,7 +65,11 @@ export async function POST(request: NextRequest) {
     const inserted = await appendStructuredQuestions(structured as any);
 
     return NextResponse.json({
-      message: `Imported ${inserted.length} questions from PDF`
+      message: usedOpenAI
+        ? `Imported ${inserted.length} questions from PDF using OpenAI`
+        : requestedOpenAI
+          ? `OpenAI is not configured. Imported ${inserted.length} questions from PDF using standard parser`
+          : `Imported ${inserted.length} questions from PDF`
     });
   } catch (error) {
     return NextResponse.json(

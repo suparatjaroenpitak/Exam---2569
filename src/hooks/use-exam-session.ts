@@ -71,6 +71,11 @@ export function useExamSession(session: ExamSession, onTimeExpired: (payload: Ex
     }));
   }
 
+  function setRemainingTime(nextSeconds: number) {
+    expiredRef.current = false;
+    setTimeLeftSeconds(Math.max(0, Math.round(nextSeconds)));
+  }
+
   return {
     currentIndex,
     currentQuestion,
@@ -82,6 +87,7 @@ export function useExamSession(session: ExamSession, onTimeExpired: (payload: Ex
     next,
     previous,
     selectAnswer,
-    toPayload
+    toPayload,
+    setRemainingTime
   };
 }

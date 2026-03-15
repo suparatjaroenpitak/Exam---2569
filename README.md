@@ -1,6 +1,6 @@
 # ระบบฝึกทำข้อสอบออนไลน์
 
-โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, ตรวจสอบข้อสอบด้วย AI, จัดหมวดหมู่อัตโนมัติ และสร้างข้อสอบใหม่ผ่าน OpenAI-compatible LLM endpoint
+โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และผ่าน OpenAI-compatible endpoint
 
 ## ความสามารถหลัก
 
@@ -8,13 +8,14 @@
 - แยกสิทธิ์ `user` และ `admin`
 - สลับภาษาได้ 2 ภาษา: ไทย และ English
 - สลับธีมได้ 2 โหมด: สว่าง และ มืด
-- สุ่มข้อสอบตามวิชา หัวข้อย่อย จำนวนข้อ และระดับความยาก
+- สุ่มข้อสอบตามวิชา หัวข้อย่อย จำนวนข้อ และระดับความยาก โดยถ้าข้อสอบมีไม่ครบ ระบบจะใช้เท่าที่มีทั้งหมด
 - ระบบจับเวลาในการสอบและตรวจคะแนนอัตโนมัติ
 - ดูประวัติการสอบย้อนหลังและสถิติผลลัพธ์แยกตามวิชาและหัวข้อย่อย
-- ผู้ดูแลสามารถนำเข้าข้อสอบจาก PDF
-- ผู้ดูแลสามารถสร้างข้อสอบใหม่ด้วย AI ตามวิชา/หัวข้อย่อย/ระดับความยาก
-- AI classifier สำหรับจัดประเภทข้อสอบเป็นวิชาและหัวข้อย่อย
-- AI validation pipeline สำหรับตรวจว่าข้อสอบจาก PDF เป็นข้อสอบแบบปรนัยที่ถูกต้องหรือไม่
+- ผู้ดูแลสามารถนำเข้าข้อสอบจาก PDF ได้ทั้งแบบ parser ปกติและแบบใช้ OpenAI ช่วยแยกข้อสอบ
+- ผู้ดูแลสามารถสร้างข้อสอบใหม่ด้วย AI ตามวิชา/หัวข้อย่อย/ระดับความยาก หรือใช้ตัวสร้างแบบไม่พึ่ง LLM
+- ตรวจจับข้อสอบซ้ำก่อนบันทึกเข้าคลัง
+- ผู้ดูแลสามารถดูรายการข้อสอบทั้งหมดพร้อมโจทย์ ตัวเลือก คำตอบ และคำอธิบายได้ในหน้า admin
+- ผู้ดูแลสามารถปรับเวลาเริ่มต้นของข้อสอบ และปรับเวลาถอยหลังระหว่างสอบได้
 - จัดเก็บคำถาม ผู้ใช้ และประวัติการสอบในไฟล์ Excel
 
 ## โครงสร้างวิชา ก.พ.
@@ -134,13 +135,24 @@ JWT_SECRET=replace-with-a-long-random-secret
 OPEN_SOURCE_LLM_API_KEY=
 OPEN_SOURCE_LLM_BASE_URL=https://openrouter.ai/api/v1
 OPEN_SOURCE_LLM_MODEL=meta-llama/llama-3.1-8b-instruct:free
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
 DEFAULT_ADMIN_EMAIL=admin@example.com
 DEFAULT_ADMIN_PASSWORD=Admin12345!
 ```
 
-## การตั้งค่า OPEN_SOURCE_LLM_API_KEY (LLM API key)
+## การตั้งค่า AI Providers
 
-แอปจะเรียก LLM ผ่าน `OPEN_SOURCE_LLM_API_KEY` — ถ้าไม่ได้ตั้งค่าไว้ ฟีเจอร์ที่พึ่ง LLM (เช่นการสร้างข้อสอบด้วย AI หรือการตรวจข้อสอบจาก PDF) จะโยน Error: "Missing OPEN_SOURCE_LLM_API_KEY configuration".
+แอปรองรับ AI 2 กลุ่มหลัก
+
+- `OPEN_SOURCE_LLM_*` สำหรับฟีเจอร์สร้างข้อสอบแบบ LLM-compatible endpoint
+- `OPENAI_*` สำหรับโหมดนำเข้า PDF ที่ใช้ OpenAI ช่วยแยกข้อสอบและดึง structured questions
+
+ถ้าไม่ได้ตั้งค่า key บางตัว ฟีเจอร์ที่พึ่ง key นั้นจะ fallback เท่าที่ทำได้ เช่น
+
+- การสร้างข้อสอบจากหน้า admin จะ fallback ไปใช้ตัวสร้างแบบ rule-based ถ้าไม่มี `OPEN_SOURCE_LLM_API_KEY`
+- การนำเข้า PDF ถ้าเลือกโหมด OpenAI แต่ยังไม่ได้ตั้ง `OPENAI_API_KEY` ระบบจะกลับไปใช้ parser ปกติ
 
 ขั้นตอนการตั้งค่าสำหรับการพัฒนา (local):
 
@@ -150,9 +162,9 @@ DEFAULT_ADMIN_PASSWORD=Admin12345!
 Copy-Item .env.example .env.local
 ```
 
-2. เปิด `.env.local` แล้วใส่ค่า API key ของผู้ให้บริการ LLM เช่น OpenRouter:
+2. เปิด `.env.local` แล้วใส่ค่า API key ตาม provider ที่ต้องการใช้งาน:
 
-จากเว็บ 
+ตัวอย่าง OpenRouter
 
 ```text
 https://openrouter.ai/
@@ -162,24 +174,30 @@ https://openrouter.ai/
 OPEN_SOURCE_LLM_API_KEY=sk_your_api_key_here
 ```
 
+ตัวอย่าง OpenAI
+
+```text
+OPENAI_API_KEY=sk_your_openai_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
+```
+
 3. รันแอปในโหมดพัฒนาและทดสอบฟังก์ชัน admin (ล็อกอินเป็น admin ตาม `DEFAULT_ADMIN_EMAIL`/`DEFAULT_ADMIN_PASSWORD`) เพื่อเรียก endpoint `generate-questions` หรือ `import-pdf` จาก UI
 
 การตั้งค่าสำหรับ Render (production):
 
 - ไปที่หน้า Service → Environment → Add Environment Variable
-- Key: `OPEN_SOURCE_LLM_API_KEY`
-- Value: วาง API key ที่ได้จากผู้ให้บริการ
+- ใส่ค่า `OPEN_SOURCE_LLM_API_KEY` เมื่อต้องการใช้ LLM generator
+- ใส่ค่า `OPENAI_API_KEY` เมื่อต้องการใช้ OpenAI ช่วย import PDF
 
 หมายเหตุเพิ่มเติม:
 
-- ใน `render.yaml` ค่า `OPEN_SOURCE_LLM_API_KEY` ถูกตั้งเป็น `sync: false` — ระหว่างการสร้าง Blueprint ระบบจะ prompt ให้คุณใส่ค่าไว้ใน dashboard
-- หากยังไม่ต้องการใช้ฟีเจอร์ AI สามารถเว้นค่านี้ว่างได้ แต่การเรียก API ที่พึ่ง LLM จะล้มเหลวจนกว่าจะตั้งค่า
-- ถาต้องการ ผมช่วยเปลี่ยนพฤติกรรมโค้ดให้คืน HTTP 400 หรือปิดฟีเจอร์ AI แทนการ throw exception — บอกผมได้เลย
+- ใน `render.yaml` สามารถตั้ง secret เหล่านี้ผ่าน dashboard ได้
+- หากยังไม่ต้องการใช้ฟีเจอร์ AI บางส่วน สามารถเว้นค่า key นั้นว่างได้ ระบบจะ fallback ตามที่รองรับ
 
 การตั้งค่าเพิ่มเติมและตัวอย่างคำสั่งสำหรับ Render (production)
 
-- ชื่อตัวแปรที่แอปอ่านได้มีหลายแบบ ขึ้นกับการตั้งค่าโค้ด: `OPEN_SOURCE_LLM_API_KEY`, `OPEN_ROUTER_API_KEY` หรือ `LLM_API_KEY`.
-  - แนะนำให้ตั้งค่า `OPEN_SOURCE_LLM_API_KEY` เป็นหลัก และถ้าผู้ให้บริการต้องการชื่ออื่น ให้ตั้งค่าเพิ่ม (`OPEN_ROUTER_API_KEY`) ด้วย
+- ตัวแปรที่แอปอ่านโดยตรงในเวอร์ชันปัจจุบันคือ `OPEN_SOURCE_LLM_API_KEY`, `OPEN_SOURCE_LLM_BASE_URL`, `OPEN_SOURCE_LLM_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`
 
 - ตัวอย่างการสร้าง/อัปเดต secret ผ่าน Render CLI (ต้องติดตั้ง `render` CLI และล็อกอินก่อน):
 
@@ -187,18 +205,16 @@ OPEN_SOURCE_LLM_API_KEY=sk_your_api_key_here
 render login
 # สร้าง secret ครั้งแรก
 render secrets create --service <SERVICE_ID> OPEN_SOURCE_LLM_API_KEY "sk_or_other_provider_your_key_here"
-
-# ถ้าต้องการเพิ่มชื่ออื่นควบคู่กัน (optional)
-render secrets create --service <SERVICE_ID> OPEN_ROUTER_API_KEY "sk_or_other_provider_your_key_here"
+render secrets create --service <SERVICE_ID> OPENAI_API_KEY "sk_openai_key_here"
 
 # อัพเดตค่าที่มีอยู่แล้ว
 render secrets update --service <SERVICE_ID> OPEN_SOURCE_LLM_API_KEY "<your-new-key>"
+render secrets update --service <SERVICE_ID> OPENAI_API_KEY "<your-new-key>"
 ```
 
 - ถ้าตั้งค่าผ่าน Dashboard:
   1. ไปที่ Render → เลือก Service → Environment
- 2. Add Environment Variable / Secret → ใส่ `OPEN_SOURCE_LLM_API_KEY` → วางค่า → Save
- 3. ถ้าใช้ชื่ออื่นในโค้ด ให้เพิ่ม `OPEN_ROUTER_API_KEY` หรือ `LLM_API_KEY` ด้วย
+ 2. Add Environment Variable / Secret → ใส่ `OPEN_SOURCE_LLM_API_KEY` และ/หรือ `OPENAI_API_KEY` → วางค่า → Save
 
 - หลังตั้ง secret แล้วให้สั่ง redeploy (ถ้า `autoDeployTrigger: commit` ไม่ได้เปิดไว้ หรือคุณต้องการ deploy ทันที):
 
@@ -207,7 +223,7 @@ render secrets update --service <SERVICE_ID> OPEN_SOURCE_LLM_API_KEY "<your-new-
 
 ```powershell
 git add render.yaml
-git commit -m "Update env vars: add OPEN_SOURCE_LLM_API_KEY (secret stored in Render)"
+git commit -m "Update env vars for AI providers"
 git push origin <your-branch>
 ```
 
@@ -223,7 +239,7 @@ git push origin <your-branch>
 
 วิธีตรวจสอบค่าใน runtime (logs):
 
-- ถ้าเรียกฟีเจอร์ AI แล้วได้ error ให้ดู logs ของ server จะเห็นข้อความ `Missing OPEN_SOURCE_LLM_API_KEY configuration` หรือข้อความจากการเรียก API ที่ล้มเหลว
+- ถ้าเรียกฟีเจอร์ AI แล้วได้ error ให้ดู logs ของ server จะเห็นข้อความ เช่น `Missing OPEN_SOURCE_LLM_API_KEY configuration`, `Missing OPENAI_API_KEY configuration` หรือข้อความจากการเรียก API ที่ล้มเหลว
 
 
 คำอธิบายตัวแปรสำคัญ
@@ -233,6 +249,9 @@ git push origin <your-branch>
 - `OPEN_SOURCE_LLM_API_KEY`: API key สำหรับบริการ LLM ที่รองรับ OpenAI-compatible API
 - `OPEN_SOURCE_LLM_BASE_URL`: base URL ของผู้ให้บริการ LLM
 - `OPEN_SOURCE_LLM_MODEL`: ชื่อโมเดลที่ต้องการใช้สร้างข้อสอบ
+- `OPENAI_API_KEY`: API key สำหรับโหมดนำเข้า PDF ที่ใช้ OpenAI ช่วยแยกข้อสอบ
+- `OPENAI_BASE_URL`: base URL ของ OpenAI-compatible endpoint สำหรับ PDF import
+- `OPENAI_MODEL`: ชื่อโมเดล OpenAI ที่ใช้สำหรับ PDF import
 - `DEFAULT_ADMIN_EMAIL`: อีเมลของ admin แรกที่ระบบจะ bootstrap ให้
 - `DEFAULT_ADMIN_PASSWORD`: รหัสผ่านของ admin แรก
 
@@ -344,12 +363,12 @@ https://exam-2569.onrender.com/
 
 - จะทำข้อสอบวิชาใด
 - จะเลือกหัวข้อย่อยเฉพาะหรือทำแบบรวมทั้งวิชา
-- ต้องการกี่ข้อ
+- ต้องการกี่ข้อ หรือเลือกใช้ข้อสอบทั้งหมดที่มีในคลังของวิชานั้น
 - ต้องการโฟกัสระดับความยากแบบใด
 
 เมื่อเริ่มสอบ ระบบจะ:
 
-- สุ่มข้อสอบตามเงื่อนไข
+- สุ่มข้อสอบตามเงื่อนไข และถ้ามีข้อสอบไม่ถึงจำนวนที่ร้องขอ จะใช้เท่าที่มี
 - เริ่มจับเวลา
 - ให้ผู้ใช้เปลี่ยนข้อไปมาได้
 - ส่งคำตอบเพื่อตรวจคะแนน
@@ -357,6 +376,15 @@ https://exam-2569.onrender.com/
 - แสดงผลการทำข้อสอบแยกตามวิชาและหัวข้อย่อย
 
 ## ฟีเจอร์สำหรับผู้ดูแลระบบ
+
+ผู้ดูแลระบบสามารถใช้งานได้ดังนี้
+
+- ดูสรุปจำนวนข้อสอบทั้งหมด แยกตามวิชาและระดับความยาก
+- ดูรายการข้อสอบทั้งหมดพร้อมโจทย์ ตัวเลือก คำตอบที่ถูก และคำอธิบาย
+- ค้นหาและกรองข้อสอบในคลัง
+- นำเข้าข้อสอบจาก PDF แบบ parser ปกติหรือแบบใช้ OpenAI
+- สร้างข้อสอบใหม่แบบ AI หรือแบบ rule-based fallback
+- ปรับเวลาเริ่มต้นก่อนสอบ และปรับเวลาถอยหลังระหว่างทำข้อสอบเมื่อเข้าสู่โหมดสอบด้วยสิทธิ์ admin
 
 ## Deploy บน Render
 
@@ -377,7 +405,8 @@ https://exam-2569.onrender.com/
 - `JWT_SECRET` ให้ Render generate หรือใส่ค่าเองที่ยาวและสุ่ม
 - `DEFAULT_ADMIN_EMAIL` ตั้งเป็นอีเมลของผู้ดูแลระบบ
 - `DEFAULT_ADMIN_PASSWORD` ตั้งเป็นรหัสผ่านเริ่มต้นของผู้ดูแลระบบ
-- `OPEN_SOURCE_LLM_API_KEY` ใส่เมื่อจะใช้ฟีเจอร์ AI
+- `OPEN_SOURCE_LLM_API_KEY` ใส่เมื่อจะใช้ LLM generator
+- `OPENAI_API_KEY` ใส่เมื่อจะใช้ OpenAI สำหรับ import PDF
 
 คำสั่งที่ใช้บน Render:
 
@@ -418,6 +447,9 @@ Environment variables ที่ควรตั้งในหน้า Environme
 - `OPEN_SOURCE_LLM_API_KEY` = (ใส่เมื่อพร้อมใช้ฟีเจอร์ AI)
 - `OPEN_SOURCE_LLM_BASE_URL = https://openrouter.ai/api/v1`
 - `OPEN_SOURCE_LLM_MODEL = meta-llama/llama-3.1-8b-instruct:free`
+- `OPENAI_API_KEY` = (ใส่เมื่อพร้อมใช้ OpenAI import PDF)
+- `OPENAI_BASE_URL = https://api.openai.com/v1`
+- `OPENAI_MODEL = gpt-4o-mini`
 
 ข้อควรระวังเพิ่มเติม:
 
@@ -433,6 +465,8 @@ Environment variables ที่ควรตั้งในหน้า Environme
 - จำนวนข้อสอบทั้งหมด
 - จำนวนข้อสอบแยกตามหมวดวิชา
 - จำนวนข้อสอบตามระดับความยาก
+- รายการข้อสอบทั้งหมดพร้อมโจทย์ ตัวเลือก คำตอบที่ถูก และคำอธิบาย
+- ช่องค้นหาและกรองหมวดวิชา
 
 ### 2. นำเข้าข้อสอบจาก PDF
 
@@ -440,17 +474,17 @@ pipeline ปัจจุบัน
 
 - อัปโหลด PDF
 - ดึงข้อความด้วย `pdf-parse`
-- แยกข้อความเป็น candidate question blocks
-- ส่งแต่ละ block ให้ AI ตรวจสอบว่าเป็นข้อสอบจริงหรือไม่
-- AI จัดวิชาและหัวข้อย่อยอัตโนมัติ
-- บันทึกเฉพาะข้อที่ผ่าน validation ลง Excel
+- เลือกได้ว่าจะใช้ parser ปกติ หรือ OpenAI ช่วยแยกข้อสอบ
+- ระบบจัดวิชาและหัวข้อย่อยอัตโนมัติ
+- ระบบตรวจข้อสอบซ้ำก่อนบันทึกเข้าคลัง
+- หลังนำเข้าสำเร็จ หน้า admin จะ refresh ข้อมูลให้อัตโนมัติ
 
 ตัวอย่างเรียก API:
 
 ```ts
 const formData = new FormData();
 formData.append("file", file);
-formData.append("difficulty", "medium");
+formData.append("parser", "openai");
 
 await fetch("/api/admin/import-pdf", {
   method: "POST",
@@ -466,6 +500,8 @@ await fetch("/api/admin/import-pdf", {
 - subcategory
 - difficulty
 - number of questions
+
+ถ้าไม่มี `OPEN_SOURCE_LLM_API_KEY` ระบบจะ fallback ไปใช้ตัวสร้างแบบ rule-based ฟรี
 
 ตัวอย่างเรียก API:
 
@@ -487,8 +523,9 @@ await fetch("/api/admin/generate-questions", {
 ระบบมี AI utility สำคัญดังนี้
 
 - `classifyQuestion()` สำหรับจัดประเภทข้อสอบเป็นวิชาและหัวข้อย่อย
-- `validateImportedQuestion()` สำหรับตรวจสอบข้อสอบจาก PDF ว่าผ่านเงื่อนไขหรือไม่
 - `generateQuestionsWithAI()` สำหรับสร้างข้อสอบแบบหลายตัวเลือกตามเงื่อนไขที่ผู้ดูแลเลือก
+- `generateQuestionsWithoutLLM()` สำหรับสร้างข้อสอบแบบ rule-based โดยไม่ใช้ LLM
+- `extractQuestionsFromPdfWithOpenAI()` สำหรับแยกข้อสอบจาก PDF โดยใช้ OpenAI
 
 ตัวอย่าง `classifyQuestion()`
 
@@ -504,6 +541,16 @@ const session = await createExamSession({
   category: "Analytical Thinking",
   subcategory: "all",
   count: 50,
+  difficulty: "medium"
+});
+```
+
+ตัวอย่างแบบใช้ข้อสอบทั้งหมดที่มี
+
+```ts
+const session = await createExamSession({
+  category: "English Language",
+  subcategory: "all",
   difficulty: "medium"
 });
 ```
@@ -562,4 +609,4 @@ npm run build
 - ระบบนี้ออกแบบให้ทำงานภายใน workspace ปัจจุบัน
 - เส้นทาง admin และ admin API ถูกป้องกันด้วย role checks
 - ใช้ Excel เป็น storage หลักตามข้อกำหนดของโปรเจกต์
-- ถ้าต้องการใช้งาน AI generation จริง ต้องตั้งค่า LLM endpoint และ API key ให้ถูกต้อง
+- ถ้าต้องการใช้งาน AI generation จริง ต้องตั้งค่า provider key ให้ถูกต้องตามฟีเจอร์ที่ใช้

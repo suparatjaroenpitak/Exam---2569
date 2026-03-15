@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { env } from "@/lib/env";
 import { EXAM_CATEGORIES, SUBJECT_SUBCATEGORIES, getDefaultSubcategory, isSupportedSubcategory } from "@/lib/constants";
+import { splitPdfIntoQuestionCandidates } from "@/lib/pdf-question-parser";
 import type { ExamCategory, ExamSubcategory, QuestionDifficulty, QuestionRecord } from "@/lib/types";
 
 const generatedQuestionSchema = z.object({
@@ -17,6 +18,21 @@ const generatedQuestionSchema = z.object({
 });
 
 const generatedResponseSchema = z.array(generatedQuestionSchema);
+
+const importedPdfQuestionSchema = z.object({
+  subject: z.enum(EXAM_CATEGORIES),
+  subcategory: z.string().min(2),
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  question: z.string().min(10),
+  choice_a: z.string().min(1),
+  choice_b: z.string().min(1),
+  choice_c: z.string().min(1),
+  choice_d: z.string().min(1),
+  correct_answer: z.enum(["A", "B", "C", "D"]),
+  explanation: z.string().min(3).optional()
+});
+
+const importedPdfResponseSchema = z.array(importedPdfQuestionSchema);
 
 const classificationSchema = z.object({
   subject: z.enum(EXAM_CATEGORIES),
@@ -80,6 +96,50 @@ async function callJsonModel<T>(schema: z.ZodSchema<T>, prompt: string, systemPr
 
   if (!content) {
     throw new Error("LLM response did not contain content");
+  }
+
+  return schema.parse(JSON.parse(stripCodeFence(content)));
+}
+
+async function callOpenAIJsonModel<T>(schema: z.ZodSchema<T>, prompt: string, systemPrompt: string) {
+  if (!env.openAiApiKey) {
+    throw new Error("Missing OPENAI_API_KEY configuration");
+  }
+
+  const response = await fetch(`${env.openAiBaseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.openAiApiKey}`
+    },
+    body: JSON.stringify({
+      model: env.openAiModel,
+      temperature: 0.1,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt }
+      ]
+    }),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(`OpenAI request failed: ${message}`);
+  }
+
+  const payload = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string | Array<{ type?: string; text?: string }> } }>;
+  };
+  const rawContent = payload.choices?.[0]?.message?.content;
+  const content = Array.isArray(rawContent)
+    ? rawContent
+        .map((part) => (part.type === "text" ? part.text || "" : ""))
+        .join("")
+    : rawContent;
+
+  if (!content) {
+    throw new Error("OpenAI response did not contain content");
   }
 
   return schema.parse(JSON.parse(stripCodeFence(content)));
@@ -196,6 +256,103 @@ export async function generateQuestionsWithAI(input: {
 
 export function getSupportedSubcategories(subject: ExamCategory) {
   return SUBJECT_SUBCATEGORIES[subject];
+}
+
+function chunkPdfText(text: string, maxChars = 8_000) {
+  const blocks = splitPdfIntoQuestionCandidates(text);
+
+  if (blocks.length > 0) {
+    return blocks.reduce<string[]>((chunks, block) => {
+      const current = chunks[chunks.length - 1];
+      if (!current || current.length + block.length + 2 > maxChars) {
+        chunks.push(block);
+      } else {
+        chunks[chunks.length - 1] = `${current}\n\n${block}`;
+      }
+      return chunks;
+    }, []);
+  }
+
+  const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  return lines.reduce<string[]>((chunks, line) => {
+    const current = chunks[chunks.length - 1];
+    if (!current || current.length + line.length + 1 > maxChars) {
+      chunks.push(line);
+    } else {
+      chunks[chunks.length - 1] = `${current}\n${line}`;
+    }
+    return chunks;
+  }, []);
+}
+
+export async function extractQuestionsFromPdfWithOpenAI(input: {
+  text: string;
+  maxQuestions?: number;
+}): Promise<Array<Omit<QuestionRecord, "id" | "createdAt">>> {
+  const maxQuestions = input.maxQuestions ?? 200;
+  const chunks = chunkPdfText(input.text).slice(0, 12);
+  const collected: Array<Omit<QuestionRecord, "id" | "createdAt">> = [];
+
+  for (const chunk of chunks) {
+    if (collected.length >= maxQuestions) {
+      break;
+    }
+
+    const remaining = maxQuestions - collected.length;
+    const prompt = [
+      "Extract Thai civil service multiple-choice questions from the PDF text below.",
+      `Return strict JSON array only, with no markdown, up to ${Math.min(remaining, 25)} items.`,
+      `Supported subjects: ${EXAM_CATEGORIES.join(", ")}`,
+      "Use only these supported subcategories for each subject:",
+      getSubjectGuideText(),
+      "Rules:",
+      "- Keep only valid four-choice multiple choice questions.",
+      "- Infer subject, subcategory, and difficulty.",
+      "- Each item must include: subject, subcategory, difficulty, question, choice_a, choice_b, choice_c, choice_d, correct_answer, explanation.",
+      "- If the source text is not a valid question, omit it.",
+      "- If answer labels are Thai letters, convert them to A/B/C/D.",
+      "PDF text:",
+      chunk
+    ].join("\n");
+
+    const rows = await callOpenAIJsonModel(
+      importedPdfResponseSchema,
+      prompt,
+      "You extract and normalize Thai civil service exam questions from PDF text. Return valid JSON only."
+    );
+
+    for (const row of rows) {
+      if (collected.length >= maxQuestions) {
+        break;
+      }
+
+      const subject = row.subject;
+      collected.push({
+        subject,
+        category: subject,
+        subcategory: normalizeSubcategory(subject, row.subcategory),
+        difficulty: row.difficulty ?? "medium",
+        question: row.question.trim(),
+        choice_a: row.choice_a.trim(),
+        choice_b: row.choice_b.trim(),
+        choice_c: row.choice_c.trim(),
+        choice_d: row.choice_d.trim(),
+        correct_answer: row.correct_answer,
+        explanation: row.explanation?.trim() || "Imported from PDF using OpenAI",
+        source: "pdf"
+      });
+    }
+  }
+
+  const seen = new Set<string>();
+  return collected.filter((row) => {
+    const key = row.question.replace(/\s+/g, " ").trim().toLowerCase();
+    if (!key || seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 function randInt(min: number, max: number) {

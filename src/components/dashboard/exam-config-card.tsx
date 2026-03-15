@@ -13,16 +13,20 @@ export function ExamConfigCard() {
   const { locale, translate } = usePreferences();
   const [category, setCategory] = useState<ExamCategory>(EXAM_CATEGORIES[0]);
   const [subcategory, setSubcategory] = useState<ExamSubcategory | "all">("all");
-  const [count, setCount] = useState<number>(EXAM_LENGTH_OPTIONS[0]);
+  const [count, setCount] = useState<string>(String(EXAM_LENGTH_OPTIONS[0]));
   const [difficulty, setDifficulty] = useState<QuestionDifficulty>(DIFFICULTY_OPTIONS[1]);
 
   function startExam() {
     const params = new URLSearchParams({
       category,
       subcategory,
-      count: String(count),
       difficulty
     });
+
+    if (count !== "all") {
+      params.set("count", count);
+    }
+
     router.push(`/exam?${params.toString()}`);
   }
 
@@ -74,10 +78,11 @@ export function ExamConfigCard() {
           <select
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             value={count}
-            onChange={(event) => setCount(Number(event.target.value))}
+              onChange={(event) => setCount(event.target.value)}
           >
+              <option value="all">{translate("common.all")}</option>
             {EXAM_LENGTH_OPTIONS.map((item) => (
-              <option key={item} value={item}>
+                <option key={item} value={String(item)}>
                 {item}
               </option>
             ))}

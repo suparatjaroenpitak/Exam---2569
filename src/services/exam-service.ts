@@ -26,16 +26,19 @@ function buildChoices(question: Awaited<ReturnType<typeof getQuestions>>[number]
 export async function createExamSession(input: {
   category: ExamCategory;
   subcategory?: ExamSubcategory | "all";
-  count: number;
+  count?: number;
+  durationSecondsOverride?: number;
   difficulty?: "easy" | "medium" | "hard";
 }): Promise<ExamSession> {
   const questions = await getQuestions({ subject: input.category, subcategory: input.subcategory, difficulty: input.difficulty });
 
-  if (questions.length < input.count) {
-    throw new Error(`Not enough questions in ${input.category}. Available: ${questions.length}`);
+  if (questions.length === 0) {
+    throw new Error(`Not enough questions in ${input.category}. Available: 0`);
   }
 
-  const selected = shuffleArray(questions).slice(0, input.count);
+  const requestedCount = input.count && input.count > 0 ? input.count : questions.length;
+  const actualCount = Math.min(requestedCount, questions.length);
+  const selected = shuffleArray(questions).slice(0, actualCount);
   const sessionQuestions: ExamQuestion[] = selected.map((question) => ({
     id: question.id,
     subject: question.subject,
@@ -50,8 +53,10 @@ export async function createExamSession(input: {
     subject: input.category,
     category: input.category,
     subcategory: input.subcategory ?? "all",
-    count: input.count,
-    durationSeconds: getExamDurationSeconds(input.category, input.count),
+    count: actualCount,
+    durationSeconds: input.durationSecondsOverride && input.durationSecondsOverride > 0
+      ? input.durationSecondsOverride
+      : getExamDurationSeconds(input.category, actualCount),
     questions: sessionQuestions
   };
 }
