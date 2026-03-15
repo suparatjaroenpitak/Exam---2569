@@ -3,7 +3,8 @@ import pdfParse from "pdf-parse";
 
 import { requireApiAdmin } from "@/lib/api-guards";
 import { splitPdfIntoQuestionCandidates, parseCandidate, classifyByKeywords, estimateDifficulty } from "@/lib/pdf-question-parser";
-import type { QuestionDifficulty } from "@/lib/types";
+import { normalizeSubject, getDefaultSubcategory } from "@/lib/constants";
+import type { QuestionDifficulty, ExamSubject, AnswerKey, QuestionRecord } from "@/lib/types";
 import { appendStructuredQuestions } from "@/services/exam-service";
 
 export async function POST(request: NextRequest) {
@@ -27,22 +28,23 @@ export async function POST(request: NextRequest) {
 
     const parsed = candidates.map((candidate) => parseCandidate(candidate));
 
-    const structured = parsed
+    const structured: Array<Omit<QuestionRecord, "id" | "createdAt">> = parsed
       .map((p) => {
         if (!p.choices || p.choices.length !== 4) return null;
         const classification = classifyByKeywords(p.raw || p.question);
         const difficulty = estimateDifficulty(p.question) as QuestionDifficulty;
 
+        const normalized = (normalizeSubject(classification.subject) ?? "Analytical Thinking") as ExamSubject;
         return {
-          subject: classification.subject,
-          category: classification.subject,
-          subcategory: classification.subcategory,
+          subject: normalized,
+          category: normalized,
+          subcategory: (classification.subcategory ?? getDefaultSubcategory(normalized)) as QuestionRecord["subcategory"],
           question: p.question,
           choice_a: p.choices[0] || "",
           choice_b: p.choices[1] || "",
           choice_c: p.choices[2] || "",
           choice_d: p.choices[3] || "",
-          correct_answer: p.correct_answer || "A",
+          correct_answer: (p.correct_answer as AnswerKey) || "A",
           explanation: "Imported from PDF",
           difficulty,
           source: "pdf" as const
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "No valid questions were parsed from the PDF" }, { status: 400 });
     }
 
-    const inserted = await appendStructuredQuestions(structured);
+    const inserted = await appendStructuredQuestions(structured as any);
 
     return NextResponse.json({
       message: `Imported ${inserted.length} questions from PDF`

@@ -3,15 +3,12 @@
 import { type FormEvent, useState } from "react";
 
 import { usePreferences } from "@/components/preferences-provider";
-import { DIFFICULTY_OPTIONS, EXAM_CATEGORIES } from "@/lib/constants";
-import { getCategoryLabel, getDifficultyLabel, translateApiMessage } from "@/i18n";
-import type { ExamCategory, QuestionDifficulty } from "@/lib/types";
+import { translateApiMessage } from "@/i18n";
 
 export function PdfImportForm() {
   const { locale, translate } = usePreferences();
   const [file, setFile] = useState<File | null>(null);
-  const [category, setCategory] = useState<ExamCategory>(EXAM_CATEGORIES[0]);
-  const [difficulty, setDifficulty] = useState<QuestionDifficulty>(DIFFICULTY_OPTIONS[1]);
+  // Category and difficulty are detected automatically on import
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
