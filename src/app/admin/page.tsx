@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/app-shell";
-import { AiGeneratorForm } from "@/components/admin/ai-generator-form";
 import { AdminOverview } from "@/components/admin/admin-overview";
+import { NlpGeneratorForm } from "@/components/admin/nlp-generator-form";
 import { PdfImportForm } from "@/components/admin/pdf-import-form";
 import { QuestionBankList } from "@/components/admin/question-bank-list";
 import { requireAdminPage } from "@/lib/server-guards";
@@ -23,7 +23,7 @@ export default async function AdminPage() {
         <AdminOverview stats={stats} />
         <div className="grid gap-6 xl:grid-cols-2">
           <PdfImportForm />
-          <AiGeneratorForm />
+          <NlpGeneratorForm />
         </div>
         <QuestionBankList questions={[...questions].reverse()} />
       </div>

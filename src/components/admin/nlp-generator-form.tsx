@@ -9,7 +9,7 @@ import { DIFFICULTY_OPTIONS, EXAM_CATEGORIES, SUBJECT_SUBCATEGORIES } from "@/li
 import { getCategoryLabel, getDifficultyLabel, getSubcategoryLabel, translateApiMessage } from "@/i18n";
 import type { ExamCategory, ExamSubcategory, QuestionDifficulty } from "@/lib/types";
 
-export function AiGeneratorForm() {
+export function NlpGeneratorForm() {
   const router = useRouter();
   const { locale, translate } = usePreferences();
   const [category, setCategory] = useState<ExamCategory>(EXAM_CATEGORIES[0]);

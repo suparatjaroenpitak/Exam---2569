@@ -89,9 +89,7 @@ const API_MESSAGE_KEYS: Record<string, TranslationKey> = {
   "Invalid import payload": "message.invalid-import-payload",
   "No valid questions were parsed from the PDF": "message.no-valid-pdf-questions",
   "PDF import failed": "message.pdf-import-failed",
-  "Missing OPENAI_API_KEY configuration": "message.request-failed",
-  "Missing OPENAI_API_KEY (Hugging Face) configuration": "message.request-failed",
-  "AI generation failed": "message.generation-failed",
+  "NLP generation failed": "message.generation-failed",
   "Unable to submit exam": "message.exam-submit-failed"
 };
 

@@ -76,8 +76,8 @@ export function PdfImportForm() {
             className="mt-1 h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
           />
           <span>
-            <span className="block font-medium">{translate("admin.pdf-import-openai")}</span>
-            <span className="block text-slate-500 dark:text-slate-400">{translate("admin.pdf-import-openai-help")}</span>
+            <span className="block font-medium">{translate("admin.pdf-import-wangchan")}</span>
+            <span className="block text-slate-500 dark:text-slate-400">{translate("admin.pdf-import-wangchan-help")}</span>
           </span>
         </label>
         <p className="text-sm text-slate-600 dark:text-slate-300">{translate("admin.import-auto-detect")}</p>
