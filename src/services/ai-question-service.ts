@@ -127,6 +127,18 @@ async function callOpenAIJsonModel<T>(schema: z.ZodSchema<T>, prompt: string, sy
 
   if (!response.ok) {
     const message = await response.text();
+    try {
+      const parsed = JSON.parse(message);
+      const err = parsed?.error || parsed?.message || parsed;
+      if (typeof err === "string" && /not a valid model id/i.test(err)) {
+        throw new Error(
+          `Invalid model id '${env.openAiModel}'. Set OPENAI_MODEL to a valid Hugging Face model ID (see https://huggingface.co/models). Original error: ${err}`
+        );
+      }
+    } catch (e) {
+      // ignore parse errors and fall through to generic message
+    }
+
     throw new Error(`Hugging Face request failed: ${message}`);
   }
 
