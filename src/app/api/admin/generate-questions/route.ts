@@ -7,6 +7,7 @@ import type { ExamSubcategory } from "@/lib/types";
 import { DIFFICULTY_OPTIONS } from "@/lib/constants";
 import { generateQuestionsWithAI } from "@/services/ai-question-service";
 import { appendStructuredQuestions } from "@/services/exam-service";
+import { env } from "@/lib/env";
 
 const generateSchema = z.object({
   category: z.enum(EXAM_CATEGORIES),
@@ -23,6 +24,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!env.llmApiKey) {
+      return NextResponse.json({ message: "OPEN_SOURCE_LLM_API_KEY not configured. Set OPEN_SOURCE_LLM_API_KEY in environment." }, { status: 400 });
+    }
+
     const payload = generateSchema.parse(await request.json());
 
     if (!SUBJECT_SUBCATEGORIES[payload.category].includes(payload.subcategory as (typeof SUBJECT_SUBCATEGORIES)[typeof payload.category][number])) {

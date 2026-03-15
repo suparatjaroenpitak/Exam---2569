@@ -6,6 +6,7 @@ import { splitPdfIntoQuestionCandidates } from "@/lib/pdf-question-parser";
 import type { QuestionDifficulty } from "@/lib/types";
 import { appendStructuredQuestions } from "@/services/exam-service";
 import { validateImportedQuestion } from "@/services/ai-question-service";
+import { env } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
   const guard = await requireApiAdmin(request);
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!env.llmApiKey) {
+      return NextResponse.json({ message: "OPEN_SOURCE_LLM_API_KEY not configured. Set OPEN_SOURCE_LLM_API_KEY in environment." }, { status: 400 });
+    }
     const formData = await request.formData();
     const file = formData.get("file");
     const difficulty = formData.get("difficulty") as QuestionDifficulty | null;
