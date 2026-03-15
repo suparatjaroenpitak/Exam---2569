@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const document = await pdfParse(buffer);
-    const requestedOpenAI = parser === "openai";
-    const usedOpenAI = requestedOpenAI && Boolean(env.openAiApiKey);
+    const requestedWangchan = parser === "wangchan";
+    const usedWangchan = requestedWangchan && Boolean(env.openAiApiKey);
 
-    const structured: Array<Omit<QuestionRecord, "id" | "createdAt">> = usedOpenAI
+    const structured: Array<Omit<QuestionRecord, "id" | "createdAt">> = usedWangchan
       ? await extractQuestionsFromPdfWithOpenAI({ text: document.text, maxQuestions: 200 })
       : splitPdfIntoQuestionCandidates(document.text)
           .slice(0, 200)
@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
     const inserted = await appendStructuredQuestions(structured as any);
 
     return NextResponse.json({
-      message: usedOpenAI
-        ? `Imported ${inserted.length} questions from PDF using OpenAI`
-        : requestedOpenAI
-          ? `OpenAI is not configured. Imported ${inserted.length} questions from PDF using standard parser`
+      message: usedWangchan
+        ? `Imported ${inserted.length} questions from PDF using WangchanBERTa`
+        : requestedWangchan
+          ? `WangchanBERTa is not configured. Imported ${inserted.length} questions from PDF using standard parser`
           : `Imported ${inserted.length} questions from PDF`
     });
   } catch (error) {

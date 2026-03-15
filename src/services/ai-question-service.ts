@@ -103,43 +103,63 @@ async function callJsonModel<T>(schema: z.ZodSchema<T>, prompt: string, systemPr
 
 async function callOpenAIJsonModel<T>(schema: z.ZodSchema<T>, prompt: string, systemPrompt: string) {
   if (!env.openAiApiKey) {
-    throw new Error("Missing OPENAI_API_KEY configuration");
+    throw new Error("Missing OPENAI_API_KEY (Hugging Face) configuration");
   }
 
-  const response = await fetch(`${env.openAiBaseUrl}/chat/completions`, {
+  // Combine system and user prompts into a single input for the HF text-generation endpoint
+  const inputText = `${systemPrompt}\n\n${prompt}`;
+
+  const response = await fetch(`${env.openAiBaseUrl}/models/${env.openAiModel}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${env.openAiApiKey}`
     },
     body: JSON.stringify({
-      model: env.openAiModel,
-      temperature: 0.1,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt }
-      ]
+      inputs: inputText,
+      parameters: {
+        max_new_tokens: 1024,
+        temperature: 0.1
+      }
     }),
     cache: "no-store"
   });
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(`OpenAI request failed: ${message}`);
+    throw new Error(`Hugging Face request failed: ${message}`);
   }
 
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string | Array<{ type?: string; text?: string }> } }>;
-  };
-  const rawContent = payload.choices?.[0]?.message?.content;
-  const content = Array.isArray(rawContent)
-    ? rawContent
-        .map((part) => (part.type === "text" ? part.text || "" : ""))
-        .join("")
-    : rawContent;
+  const data = await response.json().catch(async () => {
+    // Some HF endpoints may return plain text
+    return (await response.text()) as any;
+  });
+
+  let content: string | null = null;
+
+  if (!data) {
+    content = null;
+  } else if (typeof data === "string") {
+    content = data;
+  } else if (Array.isArray(data)) {
+    // HF sometimes returns an array of generations
+    if (data[0] && typeof data[0] === "object" && "generated_text" in data[0]) {
+      content = data.map((d: any) => d.generated_text).join("\n");
+    } else if (typeof data[0] === "string") {
+      content = data.join("");
+    }
+  } else if (typeof data === "object") {
+    if ("generated_text" in data) {
+      content = (data as any).generated_text;
+    } else if ("error" in data) {
+      throw new Error(`Hugging Face error: ${(data as any).error}`);
+    } else if (data.hasOwnProperty("outputs") && Array.isArray((data as any).outputs) && (data as any).outputs[0]?.generated_text) {
+      content = (data as any).outputs.map((o: any) => o.generated_text).join("\n");
+    }
+  }
 
   if (!content) {
-    throw new Error("OpenAI response did not contain content");
+    throw new Error("Hugging Face response did not contain content");
   }
 
   return schema.parse(JSON.parse(stripCodeFence(content)));
@@ -338,7 +358,7 @@ export async function extractQuestionsFromPdfWithOpenAI(input: {
         choice_c: row.choice_c.trim(),
         choice_d: row.choice_d.trim(),
         correct_answer: row.correct_answer,
-        explanation: row.explanation?.trim() || "Imported from PDF using OpenAI",
+        explanation: row.explanation?.trim() || "Imported from PDF using WangchanBERTa",
         source: "pdf"
       });
     }

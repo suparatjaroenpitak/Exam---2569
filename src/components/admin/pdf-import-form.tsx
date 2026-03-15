@@ -10,7 +10,7 @@ export function PdfImportForm() {
   const router = useRouter();
   const { locale, translate } = usePreferences();
   const [file, setFile] = useState<File | null>(null);
-  const [useOpenAI, setUseOpenAI] = useState(true);
+  const [useWangchan, setUseWangchan] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ export function PdfImportForm() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("parser", useOpenAI ? "openai" : "standard");
+      formData.append("parser", useWangchan ? "wangchan" : "standard");
 
       const response = await fetch("/api/admin/import-pdf", {
         method: "POST",
@@ -71,8 +71,8 @@ export function PdfImportForm() {
         <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
           <input
             type="checkbox"
-            checked={useOpenAI}
-            onChange={(event) => setUseOpenAI(event.target.checked)}
+            checked={useWangchan}
+            onChange={(event) => setUseWangchan(event.target.checked)}
             className="mt-1 h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
           />
           <span>
