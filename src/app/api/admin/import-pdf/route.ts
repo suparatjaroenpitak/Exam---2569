@@ -5,7 +5,7 @@ import { requireApiAdmin } from "@/lib/api-guards";
 import { splitPdfIntoQuestionCandidates, parseCandidate, classifyByKeywords, estimateDifficulty } from "@/lib/pdf-question-parser";
 import { normalizeSubject, getDefaultSubcategory } from "@/lib/constants";
 import type { QuestionDifficulty, ExamSubject, AnswerKey, QuestionRecord } from "@/lib/types";
-import { extractQuestionsFromPdfWithWangchanNlp } from "@/services/wangchan-nlp-service";
+import { extractQuestionsFromPdfWithWangchanNlp as extractQuestionsFromThaiNlp } from "@/services/wangchan-nlp-service";
 import { appendStructuredQuestions } from "@/services/exam-service";
 
 export async function POST(request: NextRequest) {
@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const document = await pdfParse(buffer);
-    const requestedWangchan = parser === "wangchan";
+    const requestedThaiNlp = parser === "thai-nlp" || parser === "wangchan";
 
-    const structured: Array<Omit<QuestionRecord, "id" | "createdAt">> = requestedWangchan
-      ? await extractQuestionsFromPdfWithWangchanNlp({ text: document.text, maxQuestions: 200 })
+    const structured: Array<Omit<QuestionRecord, "id" | "createdAt">> = requestedThaiNlp
+      ? await extractQuestionsFromThaiNlp({ text: document.text, maxQuestions: 200 })
       : splitPdfIntoQuestionCandidates(document.text)
           .slice(0, 200)
           .map((candidate) => parseCandidate(candidate))
@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
     const inserted = await appendStructuredQuestions(structured as any);
 
     return NextResponse.json({
-      message: requestedWangchan
-        ? `Imported ${inserted.length} questions from PDF using WangchanBERTa`
+      message: requestedThaiNlp
+        ? `Imported ${inserted.length} questions from PDF using Thai NLP parser`
         : `Imported ${inserted.length} questions from PDF`
     });
   } catch (error) {

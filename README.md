@@ -1,6 +1,6 @@
 # ระบบฝึกทำข้อสอบออนไลน์
 
-โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และด้วยกระบวนการ NLP (WangchanBERTa) สำหรับการจัดหมวดและการตรวจความถูกต้องของโจทย์
+โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และด้วยโมเดลภาษาไทยเชิงกำเนิด `typhoon-ai/llama3.1-typhoon2-8b-instruct`
 
 ## ความสามารถหลัก
 
@@ -132,18 +132,22 @@ Copy-Item .env.example .env.local
 ```env
 DATA_DIR=data
 JWT_SECRET=replace-with-a-long-random-secret
-WANGCHAN_BASE_URL=https://api-inference.huggingface.co
-WANGCHAN_MODEL=airesearch/wangchanberta-base-att-spm-uncased
+HUGGINGFACE_API_KEY=
+THAI_GENERATOR_BASE_URL=https://api-inference.huggingface.co/models
+THAI_GENERATOR_MODEL=typhoon-ai/llama3.1-typhoon2-8b-instruct
 DEFAULT_ADMIN_EMAIL=admin@example.com
 DEFAULT_ADMIN_PASSWORD=Admin12345!
 ```
 
 ## การเปลี่ยนแปลงการใช้งาน AI/NLP ในเวอร์ชันนี้
 
-ระบบได้เปลี่ยนจากการเรียกใช้งาน LLM สร้างข้อความไปเป็นการใช้กระบวนการ NLP (WangchanBERTa) ในการจัดหมวดหัวข้อ การตรวจสอบความสมบูรณ์ของโจทย์ และการช่วยแยกบล็อกข้อสอบจาก PDF ซึ่งหมายความว่า:
+ระบบใช้ 2 ส่วนแยกกันชัดเจน:
 
-- ฟีเจอร์ที่เกี่ยวกับการจัดหมวดและการตรวจสอบโจทย์จะใช้ `WANGCHAN_*` คอนฟิกและชุดกฎ/heuristics ภายในแอป
-- การสร้างโจทย์เชิงเนื้อหายังทำด้วย template/rule-based generator (ไม่เรียกการสร้างข้อความจาก LLM ในการเปลี่ยนแปลงนี้)
+- การสร้างข้อสอบจากหน้า admin ใช้โมเดลภาษาไทยเชิงกำเนิด `typhoon-ai/llama3.1-typhoon2-8b-instruct` ผ่าน Hugging Face Inference API
+- การนำเข้า PDF และการจัดหมวด/ตรวจสอบข้อสอบยังใช้ตัวแยกและกฎ Thai NLP ภายในแอป
+- ถ้าเรียกโมเดลไม่สำเร็จ ระบบจะ fallback ไปใช้ template generator เพื่อไม่ให้หน้า admin พัง
+
+หมายเหตุ: ตัวโมเดลเป็น open-weight และใช้ฟรีในเชิงโมเดล แต่การเรียกผ่าน Hugging Face hosted inference โดยทั่วไปควรใช้ `HUGGINGFACE_API_KEY` ของบัญชี Hugging Face เพื่อให้เรียกใช้งานได้เสถียร
 
 ขั้นตอนการตั้งค่าสำหรับการพัฒนา (local):
 

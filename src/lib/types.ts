@@ -54,7 +54,7 @@ export type ExamSubcategory =
   | "พ.ร.บ.มาตราฐานทางจริยธรรม 2562";
 export type QuestionDifficulty = "easy" | "medium" | "hard";
 export type AnswerKey = "A" | "B" | "C" | "D";
-export type QuestionSource = "pdf" | "nlp" | "manual";
+export type QuestionSource = "pdf" | "nlp" | "llm" | "manual";
 
 export type UserRecord = {
   id: string;
