@@ -250,7 +250,12 @@ export async function generateQuestionsWithTemplates(input: {
       choices = shuffle([correct, ...wrongs]);
     } else {
       const acts = [...SUBJECT_SUBCATEGORIES["Government Law & Ethics"]];
-      const act = acts[randInt(0, acts.length - 1)];
+      // If the admin requested a specific subcategory (act) and it's supported,
+      // use it consistently for generated questions instead of picking randomly.
+      const requestedAct = isSupportedSubcategory("Government Law & Ethics", input.subcategory)
+        ? input.subcategory
+        : null;
+      const act = requestedAct ?? acts[randInt(0, acts.length - 1)];
       question = `ข้อใดเกี่ยวข้องกับ ${act}?`;
       correct = act;
       const wrongs = shuffle(acts.filter((a) => a !== act)).slice(0, 3);
