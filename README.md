@@ -137,6 +137,43 @@ DEFAULT_ADMIN_EMAIL=admin@example.com
 DEFAULT_ADMIN_PASSWORD=Admin12345!
 ```
 
+## การตั้งค่า OPEN_SOURCE_LLM_API_KEY (LLM API key)
+
+แอปจะเรียก LLM ผ่าน `OPEN_SOURCE_LLM_API_KEY` — ถ้าไม่ได้ตั้งค่าไว้ ฟีเจอร์ที่พึ่ง LLM (เช่นการสร้างข้อสอบด้วย AI หรือการตรวจข้อสอบจาก PDF) จะโยน Error: "Missing OPEN_SOURCE_LLM_API_KEY configuration".
+
+ขั้นตอนการตั้งค่าสำหรับการพัฒนา (local):
+
+1. คัดลอกไฟล์ตัวอย่างเป็นไฟล์ local:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+2. เปิด `.env.local` แล้วใส่ค่า API key ของผู้ให้บริการ LLM เช่น OpenRouter:
+
+```text
+OPEN_SOURCE_LLM_API_KEY=sk_your_api_key_here
+```
+
+3. รันแอปในโหมดพัฒนาและทดสอบฟังก์ชัน admin (ล็อกอินเป็น admin ตาม `DEFAULT_ADMIN_EMAIL`/`DEFAULT_ADMIN_PASSWORD`) เพื่อเรียก endpoint `generate-questions` หรือ `import-pdf` จาก UI
+
+การตั้งค่าสำหรับ Render (production):
+
+- ไปที่หน้า Service → Environment → Add Environment Variable
+- Key: `OPEN_SOURCE_LLM_API_KEY`
+- Value: วาง API key ที่ได้จากผู้ให้บริการ
+
+หมายเหตุเพิ่มเติม:
+
+- ใน `render.yaml` ค่า `OPEN_SOURCE_LLM_API_KEY` ถูกตั้งเป็น `sync: false` — ระหว่างการสร้าง Blueprint ระบบจะ prompt ให้คุณใส่ค่าไว้ใน dashboard
+- หากยังไม่ต้องการใช้ฟีเจอร์ AI สามารถเว้นค่านี้ว่างได้ แต่การเรียก API ที่พึ่ง LLM จะล้มเหลวจนกว่าจะตั้งค่า
+- ถาต้องการ ผมช่วยเปลี่ยนพฤติกรรมโค้ดให้คืน HTTP 400 หรือปิดฟีเจอร์ AI แทนการ throw exception — บอกผมได้เลย
+
+วิธีตรวจสอบค่าใน runtime (logs):
+
+- ถ้าเรียกฟีเจอร์ AI แล้วได้ error ให้ดู logs ของ server จะเห็นข้อความ `Missing OPEN_SOURCE_LLM_API_KEY configuration` หรือข้อความจากการเรียก API ที่ล้มเหลว
+
+
 คำอธิบายตัวแปรสำคัญ
 
 - `DATA_DIR`: path สำหรับเก็บไฟล์ Excel ถ้าไม่กำหนดจะใช้ `data/` ใน root ของโปรเจกต์
