@@ -197,3 +197,132 @@ export async function generateQuestionsWithAI(input: {
 export function getSupportedSubcategories(subject: ExamCategory) {
   return SUBJECT_SUBCATEGORIES[subject];
 }
+
+function randInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function shuffle<T>(arr: T[]) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+export async function generateQuestionsWithoutLLM(input: {
+  category: ExamCategory;
+  subcategory: ExamSubcategory;
+  count: number;
+  difficulty: QuestionDifficulty;
+}): Promise<Array<Omit<QuestionRecord, "id" | "createdAt">>> {
+  const rows: Array<Omit<QuestionRecord, "id" | "createdAt">> = [];
+
+  for (let i = 0; i < input.count; i++) {
+    const diff = input.difficulty;
+    const subject = input.category;
+    // Simple template-based generators
+    if (subject === "Analytical Thinking") {
+      const a = randInt(2, diff === "easy" ? 12 : diff === "medium" ? 30 : 120);
+      const b = randInt(1, diff === "easy" ? 10 : diff === "medium" ? 20 : 60);
+      const op = Math.random() < 0.5 ? "+" : "-";
+      const question = `หาก ${a} ${op} x = ${a + (op === "+" ? b : -b)}, ค่า x เท่ากับเท่าใด?`;
+      const correct = op === "+" ? String(b) : String(-b);
+      const wrongs = [String(b + 1), String(Math.max(1, b - 1)), String(b + 2)];
+      const choices = shuffle([correct, ...wrongs]);
+      const correctIndex = choices.indexOf(correct);
+      rows.push({
+        subject,
+        category: subject,
+        subcategory: input.subcategory,
+        question,
+        choice_a: choices[0],
+        choice_b: choices[1],
+        choice_c: choices[2],
+        choice_d: choices[3],
+        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
+        explanation: `แก้สมการให้ได้ค่า x = ${correct}`,
+        difficulty: diff,
+        source: "ai"
+      });
+    } else if (subject === "Thai Language") {
+      const words = ["ความหมาย", "คำศัพท์", "ประโยค", "การอ่าน", "การสะกด"];
+      const target = words[randInt(0, words.length - 1)];
+      const question = `คำใดมีความหมายใกล้เคียงกับ "${target}" มากที่สุด?`;
+      const correct = target;
+      const wrongs = shuffle(words.filter((w) => w !== target)).slice(0, 3);
+      const choices = shuffle([correct, ...wrongs]);
+      const correctIndex = choices.indexOf(correct);
+      rows.push({
+        subject,
+        category: subject,
+        subcategory: input.subcategory,
+        question,
+        choice_a: choices[0],
+        choice_b: choices[1],
+        choice_c: choices[2],
+        choice_d: choices[3],
+        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
+        explanation: `คำที่ใกล้เคียงกับ "${target}" คือ "${correct}"`,
+        difficulty: diff,
+        source: "ai"
+      });
+    } else if (subject === "English Language") {
+      const vocab = [
+        ["big", "large"],
+        ["small", "tiny"],
+        ["happy", "joyful"],
+        ["quick", "fast"]
+      ];
+      const pair = vocab[randInt(0, vocab.length - 1)];
+      const question = `Choose the synonym of "${pair[0]}".`;
+      const correct = pair[1];
+      const wrongs = shuffle(vocab.map((p) => p[1]).filter((w) => w !== correct)).slice(0, 3);
+      const choices = shuffle([correct, ...wrongs]);
+      const correctIndex = choices.indexOf(correct);
+      rows.push({
+        subject,
+        category: subject,
+        subcategory: input.subcategory,
+        question,
+        choice_a: choices[0],
+        choice_b: choices[1],
+        choice_c: choices[2],
+        choice_d: choices[3],
+        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
+        explanation: `Synonym of ${pair[0]} is ${correct}`,
+        difficulty: diff,
+        source: "ai"
+      });
+    } else {
+      // Government Law & Ethics
+      const acts = [
+        "พ.ร.บ.มาตราฐานทางจริยธรรม 2562",
+        "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่",
+        "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539"
+      ];
+      const act = acts[randInt(0, acts.length - 1)];
+      const question = `ข้อใดเกี่ยวข้องกับ ${act}?`;
+      const correct = act;
+      const wrongs = shuffle(acts.filter((a) => a !== act)).slice(0, 3);
+      const choices = shuffle([correct, ...wrongs]);
+      const correctIndex = choices.indexOf(correct);
+      rows.push({
+        subject,
+        category: subject,
+        subcategory: input.subcategory,
+        question,
+        choice_a: choices[0],
+        choice_b: choices[1],
+        choice_c: choices[2],
+        choice_d: choices[3],
+        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
+        explanation: `กฎหมายที่เกี่ยวข้องคือ ${correct}`,
+        difficulty: diff,
+        source: "ai"
+      });
+    }
+  }
+
+  return rows;
+}
