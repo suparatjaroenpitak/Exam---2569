@@ -186,6 +186,13 @@ npm run lint
 - Email: `admin@example.com`
 - Password: `Admin12345!`
 
+
+ส่วนอันนี้ ผม ทดสอบ เว็บ ทำข้อสอบ กพ ภาค ก ได้ที่ 
+
+https://exam-2569.onrender.com/
+
+ผมลอง ใช้ host free จาก เว็บ  onrender 
+
 หมายเหตุ: บัญชี admin แรกถูก bootstrap จาก environment variables ไม่ได้ hardcode ไว้ในหน้า UI
 
 ## การสลับภาษาและธีม
