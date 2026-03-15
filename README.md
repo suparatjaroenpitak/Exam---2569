@@ -151,6 +151,12 @@ Copy-Item .env.example .env.local
 
 2. เปิด `.env.local` แล้วใส่ค่า API key ของผู้ให้บริการ LLM เช่น OpenRouter:
 
+จากเว็บ 
+
+```text
+https://openrouter.ai/
+```
+
 ```text
 OPEN_SOURCE_LLM_API_KEY=sk_your_api_key_here
 ```
