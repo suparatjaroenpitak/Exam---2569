@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: online-exam-practice-system
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    autoDeployTrigger: commit
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DATA_DIR
+        value: data
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OPEN_SOURCE_LLM_API_KEY
+        sync: false
+      - key: OPEN_SOURCE_LLM_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: OPEN_SOURCE_LLM_MODEL
+        value: meta-llama/llama-3.1-8b-instruct:free
+      - key: DEFAULT_ADMIN_EMAIL
+        sync: false
+      - key: DEFAULT_ADMIN_PASSWORD
+        sync: false
+
+# If you move to a paid Render plan later, you can attach a persistent disk and
+# mount it at /opt/render/project/src/data without changing the application code.

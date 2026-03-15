@@ -5,9 +5,10 @@ import path from "path";
 import * as XLSX from "xlsx";
 
 import { EXCEL_SHEETS } from "@/lib/constants";
+import { env } from "@/lib/env";
 import type { ExamResultRow, QuestionRecord, UserRecord } from "@/lib/types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = path.isAbsolute(env.dataDir) ? env.dataDir : path.resolve(process.cwd(), env.dataDir);
 const questionsFilePath = path.join(DATA_DIR, "questions.xlsx");
 const usersFilePath = path.join(DATA_DIR, "users.xlsx");
 const historyFilePath = path.join(DATA_DIR, "history.xlsx");

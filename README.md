@@ -128,6 +128,7 @@ Copy-Item .env.example .env.local
 ค่าที่ต้องตั้งมีดังนี้
 
 ```env
+DATA_DIR=data
 JWT_SECRET=replace-with-a-long-random-secret
 OPEN_SOURCE_LLM_API_KEY=
 OPEN_SOURCE_LLM_BASE_URL=https://openrouter.ai/api/v1
@@ -138,6 +139,7 @@ DEFAULT_ADMIN_PASSWORD=Admin12345!
 
 คำอธิบายตัวแปรสำคัญ
 
+- `DATA_DIR`: path สำหรับเก็บไฟล์ Excel ถ้าไม่กำหนดจะใช้ `data/` ใน root ของโปรเจกต์
 - `JWT_SECRET`: ใช้สำหรับ sign token ควรตั้งเป็นค่ายาวและคาดเดายาก
 - `OPEN_SOURCE_LLM_API_KEY`: API key สำหรับบริการ LLM ที่รองรับ OpenAI-compatible API
 - `OPEN_SOURCE_LLM_BASE_URL`: base URL ของผู้ให้บริการ LLM
@@ -199,6 +201,8 @@ npm run lint
 
 ระบบเก็บข้อมูลในไฟล์ Excel ภายใต้โฟลเดอร์ `data/`
 
+ถ้าจะ deploy ไปยังโฮสต์ที่ mount storage คนละ path สามารถตั้ง `DATA_DIR` ให้ชี้ไปยังโฟลเดอร์นั้นได้ เช่น `/opt/render/project/src/data`
+
 - ข้อสอบ
 - ผู้ใช้
 - ประวัติการทำข้อสอบ
@@ -257,6 +261,34 @@ npm run lint
 - แสดงผลการทำข้อสอบแยกตามวิชาและหัวข้อย่อย
 
 ## ฟีเจอร์สำหรับผู้ดูแลระบบ
+
+## Deploy บน Render
+
+โปรเจกต์นี้ build ผ่านบน Next.js production mode และสามารถ deploy เป็น Node web service บน Render ได้
+
+ข้อจำกัดสำคัญ:
+
+- Render แผนฟรีรันแอปได้ แต่ filesystem เป็นแบบ ephemeral
+- แอปนี้มีการเขียนไฟล์ Excel ลง `data/` ระหว่างใช้งานจริง เช่น ผู้ใช้, ประวัติสอบ, และข้อสอบที่ import
+- ดังนั้นถ้าใช้ Render ฟรี ข้อมูลอาจหายเมื่อ service restart หรือ redeploy
+- ถ้าต้องการเก็บข้อมูลถาวรจริง ควรใช้ persistent disk ของ Render ซึ่งเป็นฟีเจอร์แบบเสียเงิน หรือย้าย storage ออกไปยัง database/object storage
+
+ไฟล์ `render.yaml` ถูกเพิ่มไว้แล้วสำหรับการสร้างบริการแบบ Blueprint
+
+ค่าที่ควรใส่ตอน deploy:
+
+- `DATA_DIR=data`
+- `JWT_SECRET` ให้ Render generate หรือใส่ค่าเองที่ยาวและสุ่ม
+- `DEFAULT_ADMIN_EMAIL` ตั้งเป็นอีเมลของผู้ดูแลระบบ
+- `DEFAULT_ADMIN_PASSWORD` ตั้งเป็นรหัสผ่านเริ่มต้นของผู้ดูแลระบบ
+- `OPEN_SOURCE_LLM_API_KEY` ใส่เมื่อจะใช้ฟีเจอร์ AI
+
+คำสั่งที่ใช้บน Render:
+
+- Build: `npm install && npm run build`
+- Start: `npm run start`
+
+ถ้าภายหลังอัปเกรดเป็น plan ที่รองรับ persistent disk สามารถ mount disk ไปที่ `/opt/render/project/src/data` และใช้ `DATA_DIR=data` ต่อได้เลย
 
 ### 1. ภาพรวมคลังข้อสอบ
 
