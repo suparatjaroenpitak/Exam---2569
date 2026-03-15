@@ -290,6 +290,46 @@ npm run lint
 
 ถ้าภายหลังอัปเกรดเป็น plan ที่รองรับ persistent disk สามารถ mount disk ไปที่ `/opt/render/project/src/data` และใช้ `DATA_DIR=data` ต่อได้เลย
 
+### สร้าง Service ใหม่บน Render (Create a new Service)
+
+เมื่อคุณคลิก "New Service" → ให้เลือก "Web Services" (New Web Service)
+
+ค่าที่แนะนำในการกรอกหน้า Configure ของ Render:
+
+- **Runtime:** Node
+- **Build command:**
+
+```bash
+npm install && npm run build
+```
+
+- **Start command:**
+
+```bash
+npm run start
+```
+
+- **Branch:** `main` (หรือสาขาที่ต้องการ)
+- **Plan:** `free` (สำหรับทดสอบ) — หากต้องการเก็บไฟล์ Excel ถาวร ให้เปลี่ยนเป็น paid แล้ว attach persistent disk
+- **Region:** เลือกตามที่ใกล้ผู้ใช้ (เช่น `singapore`)
+
+Environment variables ที่ควรตั้งในหน้า Environment / Secrets ของ Render:
+
+- `DATA_DIR = data`
+- `DEFAULT_ADMIN_EMAIL = asdrtsuparat2019@gmail.com`
+- `DEFAULT_ADMIN_PASSWORD = ExamGP2569!Admin` (หรือรหัสที่คุณต้องการ)
+- `JWT_SECRET` = ให้ Render generate หรือใส่ string ยาวสุ่ม
+- `OPEN_SOURCE_LLM_API_KEY` = (ใส่เมื่อพร้อมใช้ฟีเจอร์ AI)
+- `OPEN_SOURCE_LLM_BASE_URL = https://openrouter.ai/api/v1`
+- `OPEN_SOURCE_LLM_MODEL = meta-llama/llama-3.1-8b-instruct:free`
+
+ข้อควรระวังเพิ่มเติม:
+
+- แผนฟรีของ Render ให้ไฟล์ระบบเป็น ephemeral — ข้อมูลที่เขียนลง `data/` อาจหายเมื่อ service restart หรือ redeploy
+- หากต้องการข้อมูลคงทน ให้ใช้ persistent disk (ต้องเป็นแผนที่จ่ายเงิน) หรือตั้งค่าให้เก็บข้อมูลภายนอกเช่น PostgreSQL / S3
+
+ถ้าคุณล็อกอินและเชื่อม GitHub เรียบร้อย ผมช่วยแนะนำทีละหน้าจอจนเว็บขึ้นใช้งานได้ — แจ้งผมเมื่อพร้อมครับ
+
 ### 1. ภาพรวมคลังข้อสอบ
 
 หน้า admin แสดง:
