@@ -11,26 +11,26 @@ const SUBCATEGORY_HINTS: Partial<Record<ExamSubcategory, string[]>> = {
   "Number Comparison": ["เปรียบเทียบ", "มากกว่า", "น้อยกว่า", "comparison"],
   "Data Tables": ["ตารางข้อมูล", "data table"],
   "Logical Reasoning": ["เหตุผล", "ตรรกะ", "logical"],
-  "Reading Comprehension": ["อ่านบทความ", "อ่านจับใจความ", "บทความ"],
+  "Reading Comprehension": ["อ่านบทความ", "อ่านจับใจความ", "บทความ", "passage", "ย่อหน้า", "โจทย์"],
   Summarize: ["สรุป", "ใจความสำคัญ"],
   Interpretation: ["ตีความ", "interpret"],
-  Synonym: ["คำไวพจน์", "ความหมายใกล้เคียง", "synonym"],
-  Antonym: ["คำตรงข้าม", "antonym"],
+  Synonym: ["คำไวพจน์", "ความหมายใกล้เคียง", "synonym", "ความหมายใกล้เคียงกับ"],
+  Antonym: ["คำตรงข้าม", "antonym", "คำตรงข้ามกับ"],
   Tense: ["tense", "verb tense"],
   Preposition: ["preposition"],
   Conjunction: ["conjunction"],
   Article: ["article", "a an the"],
   "Vocabulary Synonym": ["synonym", "similar meaning"],
   "Vocabulary Antonym": ["antonym", "opposite meaning"],
-  "Fill in the Blank": ["fill in the blank", "เติมคำในช่องว่าง"],
-  "Passage Reading": ["passage", "read the passage"],
-  "Story Questions": ["story", "article", "dialogue"],
-  "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534": ["ระเบียบบริหารราชการแผ่นดิน", "2534"],
-  "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546": ["กิจการบ้านเมืองที่ดี", "2546"],
-  "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539": ["ปฏิบัติราชการทางปกครอง", "2539"],
-  "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)": ["ป.อ.", "ความผิดต่อตำแหน่ง", "2499"],
-  "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่": ["ละเมิดของเจ้าหน้าที่", "ความรับผิด"],
-  "พ.ร.บ.มาตราฐานทางจริยธรรม 2562": ["จริยธรรม", "2562", "มาตรฐานทางจริยธรรม"]
+  "Fill in the Blank": ["fill in the blank", "เติมคำในช่องว่าง", "___", "_____", "( )"],
+  "Passage Reading": ["passage", "read the passage", "บทความ", "ย่อหน้า"],
+  "Story Questions": ["story", "article", "dialogue", "เรื่อง", "บท"],
+  "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534": ["ระเบียบบริหารราชการแผ่นดิน", "2534", "พ.ร.บ.", "พระราชบัญญัติ", "มาตรา", "บทบัญญัติ"],
+  "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546": ["กิจการบ้านเมืองที่ดี", "2546", "พ.ร.ฎ.", "มาตรา"],
+  "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539": ["ปฏิบัติราชการทางปกครอง", "2539", "พ.ร.บ.", "มาตรา"],
+  "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)": ["ป.อ.", "ความผิดต่อตำแหน่ง", "2499", "ประมวลกฎหมาย"],
+  "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่": ["ละเมิดของเจ้าหน้าที่", "ความรับผิด", "พ.ร.บ."],
+  "พ.ร.บ.มาตราฐานทางจริยธรรม 2562": ["จริยธรรม", "2562", "มาตรฐานทางจริยธรรม", "พ.ร.บ."]
 };
 
 function scoreHintMatches(text: string, hints: readonly string[]) {
@@ -209,55 +209,33 @@ export async function generateQuestionsWithTemplates(input: {
   difficulty: QuestionDifficulty;
 }): Promise<Array<Omit<QuestionRecord, "id" | "createdAt">>> {
   const rows: Array<Omit<QuestionRecord, "id" | "createdAt">> = [];
+  const seenFingerprints = new Set<string>();
+  const maxAttempts = Math.max(50, input.count * 6);
+  let attempts = 0;
 
-  for (let i = 0; i < input.count; i++) {
+  while (rows.length < input.count && attempts < maxAttempts) {
+    attempts++;
     const diff = input.difficulty;
     const subject = input.category;
+    let question = "";
+    let choices: string[] = [];
+    let correct = "";
+
     if (subject === "Analytical Thinking") {
       const a = randInt(2, diff === "easy" ? 12 : diff === "medium" ? 30 : 120);
       const b = randInt(1, diff === "easy" ? 10 : diff === "medium" ? 20 : 60);
       const op = Math.random() < 0.5 ? "+" : "-";
-      const question = `หาก ${a} ${op} x = ${a + (op === "+" ? b : -b)}, ค่า x เท่ากับเท่าใด?`;
-      const correct = op === "+" ? String(b) : String(-b);
+      question = `หาก ${a} ${op} x = ${a + (op === "+" ? b : -b)}, ค่า x เท่ากับเท่าใด?`;
+      correct = op === "+" ? String(b) : String(-b);
       const wrongs = [String(b + 1), String(Math.max(1, b - 1)), String(b + 2)];
-      const choices = shuffle([correct, ...wrongs]);
-      const correctIndex = choices.indexOf(correct);
-      rows.push({
-        subject,
-        category: subject,
-        subcategory: input.subcategory,
-        question,
-        choice_a: choices[0],
-        choice_b: choices[1],
-        choice_c: choices[2],
-        choice_d: choices[3],
-        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
-        explanation: `แก้สมการให้ได้ค่า x = ${correct}`,
-        difficulty: diff,
-        source: "ai"
-      });
+      choices = shuffle([correct, ...wrongs]);
     } else if (subject === "Thai Language") {
       const words = ["ความหมาย", "คำศัพท์", "ประโยค", "การอ่าน", "การสะกด"];
       const target = words[randInt(0, words.length - 1)];
-      const question = `คำใดมีความหมายใกล้เคียงกับ "${target}" มากที่สุด?`;
-      const correct = target;
+      question = `คำใดมีความหมายใกล้เคียงกับ "${target}" มากที่สุด?`;
+      correct = target;
       const wrongs = shuffle(words.filter((w) => w !== target)).slice(0, 3);
-      const choices = shuffle([correct, ...wrongs]);
-      const correctIndex = choices.indexOf(correct);
-      rows.push({
-        subject,
-        category: subject,
-        subcategory: input.subcategory,
-        question,
-        choice_a: choices[0],
-        choice_b: choices[1],
-        choice_c: choices[2],
-        choice_d: choices[3],
-        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
-        explanation: `คำที่ใกล้เคียงกับ "${target}" คือ "${correct}"`,
-        difficulty: diff,
-        source: "ai"
-      });
+      choices = shuffle([correct, ...wrongs]);
     } else if (subject === "English Language") {
       const vocab = [
         ["big", "large"],
@@ -266,48 +244,55 @@ export async function generateQuestionsWithTemplates(input: {
         ["quick", "fast"]
       ];
       const pair = vocab[randInt(0, vocab.length - 1)];
-      const question = `Choose the synonym of "${pair[0]}".`;
-      const correct = pair[1];
+      question = `Choose the synonym of "${pair[0]}".`;
+      correct = pair[1];
       const wrongs = shuffle(vocab.map((p) => p[1]).filter((w) => w !== correct)).slice(0, 3);
-      const choices = shuffle([correct, ...wrongs]);
-      const correctIndex = choices.indexOf(correct);
-      rows.push({
-        subject,
-        category: subject,
-        subcategory: input.subcategory,
-        question,
-        choice_a: choices[0],
-        choice_b: choices[1],
-        choice_c: choices[2],
-        choice_d: choices[3],
-        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
-        explanation: `Synonym of ${pair[0]} is ${correct}`,
-        difficulty: diff,
-        source: "ai"
-      });
+      choices = shuffle([correct, ...wrongs]);
     } else {
       const acts = [...SUBJECT_SUBCATEGORIES["Government Law & Ethics"]];
       const act = acts[randInt(0, acts.length - 1)];
-      const question = `ข้อใดเกี่ยวข้องกับ ${act}?`;
-      const correct = act;
+      question = `ข้อใดเกี่ยวข้องกับ ${act}?`;
+      correct = act;
       const wrongs = shuffle(acts.filter((a) => a !== act)).slice(0, 3);
-      const choices = shuffle([correct, ...wrongs]);
-      const correctIndex = choices.indexOf(correct);
-      rows.push({
-        subject,
-        category: subject,
-        subcategory: input.subcategory,
-        question,
-        choice_a: choices[0],
-        choice_b: choices[1],
-        choice_c: choices[2],
-        choice_d: choices[3],
-        correct_answer: (["A", "B", "C", "D"] as const)[correctIndex],
-        explanation: `กฎหมายที่เกี่ยวข้องคือ ${correct}`,
-        difficulty: diff,
-        source: "ai"
-      });
+      choices = shuffle([correct, ...wrongs]);
     }
+
+    // normalize and build fingerprint similar to question-service
+    const qNorm = String(question).replace(/\s+/g, " ").trim().toLowerCase();
+    const choiceNorms = choices.map((c) => String(c).replace(/\s+/g, " ").trim().toLowerCase());
+    const sortedChoices = choiceNorms.slice().sort();
+    const keyMap: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
+    const correctIndex = choices.indexOf(correct);
+    const correctText = correctIndex >= 0 ? choiceNorms[correctIndex] : "";
+    const fingerprint = [qNorm, sortedChoices.join("||"), correctText].join("||");
+
+    if (seenFingerprints.has(fingerprint)) {
+      continue;
+    }
+
+    seenFingerprints.add(fingerprint);
+
+    // determine subcategory: use provided if valid, else infer per-question
+    const finalSubcategory = isSupportedSubcategory(subject, input.subcategory)
+      ? input.subcategory
+      : inferSubcategory(subject, question);
+
+    const correctKey = (["A", "B", "C", "D"] as const)[choices.indexOf(correct)];
+
+    rows.push({
+      subject,
+      category: subject,
+      subcategory: finalSubcategory,
+      question,
+      choice_a: choices[0] ?? "",
+      choice_b: choices[1] ?? "",
+      choice_c: choices[2] ?? "",
+      choice_d: choices[3] ?? "",
+      correct_answer: ([("A" as const), ("B" as const), ("C" as const), ("D" as const)][choices.indexOf(correct)]) || "A",
+      explanation: subject === "Analytical Thinking" ? `แก้สมการให้ได้ค่า x = ${correct}` : subject === "Thai Language" ? `คำที่ใกล้เคียงกับ "${correct}" คือ "${correct}"` : subject === "English Language" ? `Synonym of ${choices[choices.indexOf(correct)]} is ${correct}` : `กฎหมายที่เกี่ยวข้องคือ ${correct}`,
+      difficulty: diff,
+      source: "nlp"
+    });
   }
 
   return rows;

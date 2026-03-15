@@ -1,6 +1,6 @@
 # ระบบฝึกทำข้อสอบออนไลน์
 
-โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และผ่าน OpenAI-compatible endpoint
+โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และด้วยกระบวนการ NLP (WangchanBERTa) สำหรับการจัดหมวดและการตรวจความถูกต้องของโจทย์
 
 ## ความสามารถหลัก
 
@@ -132,27 +132,18 @@ Copy-Item .env.example .env.local
 ```env
 DATA_DIR=data
 JWT_SECRET=replace-with-a-long-random-secret
-OPEN_SOURCE_LLM_API_KEY=
-OPEN_SOURCE_LLM_BASE_URL=https://openrouter.ai/api/v1
-OPEN_SOURCE_LLM_MODEL=meta-llama/llama-3.1-8b-instruct:free
-OPENAI_API_KEY=
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o-mini
+WANGCHAN_BASE_URL=https://api-inference.huggingface.co
+WANGCHAN_MODEL=airesearch/wangchanberta-base-att-spm-uncased
 DEFAULT_ADMIN_EMAIL=admin@example.com
 DEFAULT_ADMIN_PASSWORD=Admin12345!
 ```
 
-## การตั้งค่า AI Providers
+## การเปลี่ยนแปลงการใช้งาน AI/NLP ในเวอร์ชันนี้
 
-แอปรองรับ AI 2 กลุ่มหลัก
+ระบบได้เปลี่ยนจากการเรียกใช้งาน LLM สร้างข้อความไปเป็นการใช้กระบวนการ NLP (WangchanBERTa) ในการจัดหมวดหัวข้อ การตรวจสอบความสมบูรณ์ของโจทย์ และการช่วยแยกบล็อกข้อสอบจาก PDF ซึ่งหมายความว่า:
 
-- `OPEN_SOURCE_LLM_*` สำหรับฟีเจอร์สร้างข้อสอบแบบ LLM-compatible endpoint
-- `OPENAI_*` สำหรับโหมดนำเข้า PDF ที่ใช้ OpenAI ช่วยแยกข้อสอบและดึง structured questions
-
-ถ้าไม่ได้ตั้งค่า key บางตัว ฟีเจอร์ที่พึ่ง key นั้นจะ fallback เท่าที่ทำได้ เช่น
-
-- การสร้างข้อสอบจากหน้า admin จะ fallback ไปใช้ตัวสร้างแบบ rule-based ถ้าไม่มี `OPEN_SOURCE_LLM_API_KEY`
-- การนำเข้า PDF ถ้าเลือกโหมด OpenAI แต่ยังไม่ได้ตั้ง `OPENAI_API_KEY` ระบบจะกลับไปใช้ parser ปกติ
+- ฟีเจอร์ที่เกี่ยวกับการจัดหมวดและการตรวจสอบโจทย์จะใช้ `WANGCHAN_*` คอนฟิกและชุดกฎ/heuristics ภายในแอป
+- การสร้างโจทย์เชิงเนื้อหายังทำด้วย template/rule-based generator (ไม่เรียกการสร้างข้อความจาก LLM ในการเปลี่ยนแปลงนี้)
 
 ขั้นตอนการตั้งค่าสำหรับการพัฒนา (local):
 

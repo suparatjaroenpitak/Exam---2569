@@ -40,7 +40,7 @@ export default function HomePage() {
                 <li>{translate("home.feature.auth")}</li>
                 <li>{translate("home.feature.storage")}</li>
                 <li>{translate("home.feature.pdf")}</li>
-                <li>{translate("home.feature.ai")}</li>
+                <li>{translate("home.feature.nlp")}</li>
                 <li>{translate("home.feature.runner")}</li>
               </ul>
             </div>

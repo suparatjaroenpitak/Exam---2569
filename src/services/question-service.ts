@@ -50,9 +50,20 @@ function invalidateQuestionCache() {
 function buildQuestionFingerprint(
   row: Pick<QuestionRecord, "question" | "choice_a" | "choice_b" | "choice_c" | "choice_d" | "correct_answer">
 ) {
-  return [row.question, row.choice_a, row.choice_b, row.choice_c, row.choice_d, row.correct_answer]
-    .map((value) => String(value).replace(/\s+/g, " ").trim().toLowerCase())
-    .join("||");
+  // Use question text, sorted choice texts, and the correct answer text to create
+  // a fingerprint that is stable regardless of choice ordering. This prevents
+  // duplicates when generators shuffle choices.
+  const q = String(row.question).replace(/\s+/g, " ").trim().toLowerCase();
+  const choices = [row.choice_a, row.choice_b, row.choice_c, row.choice_d].map((c) =>
+    String(c).replace(/\s+/g, " ").trim().toLowerCase()
+  );
+  const sortedChoices = choices.slice().sort();
+  // Map correct_answer key (A/B/C/D) to the correct choice text; if missing, leave empty
+  const keyMap: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
+  const keyIndex = keyMap[String(row.correct_answer) || ""]; 
+  const correctText = typeof keyIndex === "number" && choices[keyIndex] ? choices[keyIndex] : "";
+
+  return [q, sortedChoices.join("||"), correctText].join("||");
 }
 
 export async function getQuestions(filters?: { category?: ExamCategory; subject?: ExamCategory; subcategory?: ExamSubcategory | "all"; difficulty?: QuestionDifficulty }) {
@@ -103,6 +114,8 @@ export async function appendStructuredQuestions(rows: Array<Omit<QuestionRecord,
       ...row,
       subject: row.subject,
       category: row.subject,
+      subcategory: row.subcategory || getDefaultSubcategory(row.subject),
+      difficulty: row.difficulty || ("medium" as any),
       id: createQuestionId(),
       createdAt: new Date().toISOString()
     }));

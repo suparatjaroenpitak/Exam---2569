@@ -43,8 +43,8 @@ export function NlpGeneratorForm() {
   return (
     <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("admin.ai-generator")}</p>
-        <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("admin.create-ai")}</h3>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("admin.nlp-generator")}</p>
+        <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("admin.create-nlp")}</h3>
       </div>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-3">
