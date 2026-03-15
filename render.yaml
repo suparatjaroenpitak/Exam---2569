@@ -15,11 +15,13 @@ services:
         value: data
       - key: JWT_SECRET
         generateValue: true
+      - key: OPEN_ROUTER_API_KEY
+        sync: false
       - key: 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
         sync: false
       - key: OPEN_SOURCE_LLM_BASE_URL
         value: https://openrouter.ai/api/v1
-      - key: OPEN_SOURCE_LLM_MODEL
+      - key: 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
         value: meta-llama/llama-3.1-8b-instruct:free
       - key: DEFAULT_ADMIN_EMAIL
         sync: false
