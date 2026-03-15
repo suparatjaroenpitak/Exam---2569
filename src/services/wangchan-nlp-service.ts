@@ -81,6 +81,103 @@ function buildRowFingerprint(row: Pick<QuestionRecord, "question" | "choice_a" |
   return [question, sortedChoices.join("||"), correctText].join("||");
 }
 
+function buildRowStemFingerprint(row: Pick<QuestionRecord, "subject" | "subcategory" | "question">) {
+  const subject = normalizeText(row.subject).toLowerCase();
+  const subcategory = normalizeText(row.subcategory).toLowerCase();
+  const question = normalizeText(row.question).toLowerCase();
+
+  return [subject, subcategory, question].join("||");
+}
+
+function pickOne<T>(items: readonly T[]) {
+  return items[randInt(0, items.length - 1)];
+}
+
+const LAW_CONCEPTS: Record<Extract<ExamSubcategory,
+  | "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534"
+  | "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546"
+  | "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539"
+  | "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)"
+  | "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่"
+  | "พ.ร.บ.มาตราฐานทางจริยธรรม 2562"
+>, Array<{ clue: string; explanation: string }>> = {
+  "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534": [
+    { clue: "การจัดโครงสร้างราชการส่วนกลาง ส่วนภูมิภาค และส่วนท้องถิ่น", explanation: "กฎหมายนี้ว่าด้วยโครงสร้างและระบบบริหารราชการแผ่นดิน" },
+    { clue: "อำนาจหน้าที่ของคณะรัฐมนตรี นายกรัฐมนตรี และกระทรวงทบวงกรม", explanation: "สาระสำคัญของกฎหมายนี้คือการกำหนดอำนาจหน้าที่ขององค์กรฝ่ายบริหาร" },
+    { clue: "หลักการจัดระเบียบบริหารราชการแผ่นดิน", explanation: "หัวใจของกฎหมายฉบับนี้คือระเบียบและโครงสร้างการบริหารราชการ" },
+    { clue: "ความสัมพันธ์ในการบังคับบัญชาระหว่างส่วนราชการ", explanation: "กฎหมายนี้กำหนดสายการบังคับบัญชาในระบบราชการ" },
+    { clue: "การแบ่งส่วนราชการและการมอบอำนาจในระบบราชการ", explanation: "เนื้อหาครอบคลุมการแบ่งส่วนราชการและการมอบอำนาจตามระบบบริหารราชการแผ่นดิน" }
+  ],
+  "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546": [
+    { clue: "การบริหารงานเพื่อประโยชน์สุขของประชาชน", explanation: "กฎหมายนี้เน้นหลักธรรมาภิบาลและประโยชน์สุขของประชาชน" },
+    { clue: "การลดขั้นตอนการปฏิบัติงานและการอำนวยความสะดวกแก่ประชาชน", explanation: "สาระสำคัญคือการทำงานภาครัฐให้มีประสิทธิภาพและบริการประชาชนดีขึ้น" },
+    { clue: "การประเมินผลสัมฤทธิ์ของภารกิจภาครัฐ", explanation: "กฎหมายนี้กำหนดให้ส่วนราชการบริหารแบบมุ่งผลสัมฤทธิ์" },
+    { clue: "หลักความคุ้มค่าและความโปร่งใสในการบริหารราชการ", explanation: "แนวคิดหลักคือการบริหารกิจการบ้านเมืองที่ดีอย่างคุ้มค่าและโปร่งใส" },
+    { clue: "การพัฒนาคุณภาพการให้บริการภาครัฐ", explanation: "เป้าหมายสำคัญคือยกระดับคุณภาพบริการของรัฐ" }
+  ],
+  "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539": [
+    { clue: "การออกคำสั่งทางปกครอง", explanation: "กฎหมายนี้กำหนดหลักและขั้นตอนเกี่ยวกับคำสั่งทางปกครอง" },
+    { clue: "สิทธิของคู่กรณีในการรับฟังพยานหลักฐาน", explanation: "สาระสำคัญคือคุ้มครองสิทธิของคู่กรณีในกระบวนการทางปกครอง" },
+    { clue: "การเพิกถอนหรือแก้ไขคำสั่งทางปกครอง", explanation: "กฎหมายนี้วางหลักเกี่ยวกับผลและการเพิกถอนคำสั่งทางปกครอง" },
+    { clue: "การแจ้งเหตุผลของคำสั่งทางปกครอง", explanation: "หลักสำคัญคือเจ้าหน้าที่ต้องแจ้งเหตุผลในคำสั่งตามที่กฎหมายกำหนด" },
+    { clue: "ขั้นตอนปฏิบัติของเจ้าหน้าที่ในเรื่องทางปกครอง", explanation: "กฎหมายนี้กำหนดวิธีปฏิบัติราชการทางปกครองอย่างเป็นธรรม" }
+  ],
+  "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)": [
+    { clue: "เจ้าพนักงานใช้อำนาจหน้าที่โดยมิชอบ", explanation: "บทบัญญัติส่วนนี้ว่าด้วยความผิดของเจ้าพนักงานต่อตำแหน่งหน้าที่ราชการ" },
+    { clue: "การเรียกรับทรัพย์สินหรือประโยชน์โดยมิชอบ", explanation: "สาระสำคัญครอบคลุมความผิดเกี่ยวกับการทุจริตของเจ้าพนักงาน" },
+    { clue: "การปฏิบัติหรือละเว้นการปฏิบัติหน้าที่โดยทุจริต", explanation: "กฎหมายนี้ลงโทษการใช้อำนาจหน้าที่โดยทุจริต" },
+    { clue: "ความรับผิดทางอาญาของเจ้าพนักงาน", explanation: "เนื้อหามุ่งคุ้มครองความสุจริตในการใช้อำนาจรัฐ" },
+    { clue: "ความผิดเกี่ยวกับตำแหน่งหน้าที่ของเจ้าพนักงาน", explanation: "เป็นบทบัญญัติว่าด้วยความผิดต่อตำแหน่งหน้าที่ราชการ" }
+  ],
+  "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่": [
+    { clue: "ความรับผิดของหน่วยงานของรัฐจากการกระทำละเมิดของเจ้าหน้าที่", explanation: "กฎหมายนี้กำหนดหลักความรับผิดจากละเมิดของเจ้าหน้าที่" },
+    { clue: "การไล่เบี้ยเจ้าหน้าที่เมื่อจงใจหรือประมาทเลินเล่ออย่างร้ายแรง", explanation: "สาระสำคัญคือหลักการชดใช้และการไล่เบี้ย" },
+    { clue: "การชดใช้ค่าสินไหมทดแทนจากความเสียหายที่เกิดแก่เอกชน", explanation: "กฎหมายนี้วางหลักให้หน่วยงานรัฐรับผิดชอบต่อผู้เสียหาย" },
+    { clue: "เงื่อนไขการเรียกให้เจ้าหน้าที่รับผิดเป็นการส่วนตัว", explanation: "ประเด็นหลักคือเกณฑ์ความรับผิดส่วนบุคคลของเจ้าหน้าที่" },
+    { clue: "หลักเกณฑ์เมื่อเจ้าหน้าที่กระทำละเมิดในระหว่างปฏิบัติหน้าที่", explanation: "กฎหมายนี้ใช้กับการละเมิดที่เกิดขึ้นระหว่างปฏิบัติหน้าที่ราชการ" }
+  ],
+  "พ.ร.บ.มาตราฐานทางจริยธรรม 2562": [
+    { clue: "มาตรฐานจริยธรรมของเจ้าหน้าที่ของรัฐ", explanation: "กฎหมายนี้กำหนดมาตรฐานทางจริยธรรมสำหรับเจ้าหน้าที่ของรัฐ" },
+    { clue: "ค่านิยมด้านความซื่อสัตย์สุจริตและความรับผิดชอบ", explanation: "สาระสำคัญคือหลักจริยธรรมและคุณธรรมในการดำรงตน" },
+    { clue: "กลไกกำกับดูแลการประพฤติทางจริยธรรม", explanation: "กฎหมายนี้วางกรอบการกำกับดูแลมาตรฐานจริยธรรม" },
+    { clue: "หลักปฏิบัติเพื่อประโยชน์ส่วนรวมและหลีกเลี่ยงผลประโยชน์ทับซ้อน", explanation: "หัวใจคือการคุ้มครองประโยชน์สาธารณะและป้องกันผลประโยชน์ทับซ้อน" },
+    { clue: "การยึดมั่นในจริยธรรมของผู้ดำรงตำแหน่งของรัฐ", explanation: "กฎหมายนี้ใช้เป็นมาตรฐานทางจริยธรรมของผู้ปฏิบัติงานภาครัฐ" }
+  ]
+};
+
+function createLawQuestion(input: {
+  subcategory: Extract<ExamSubcategory,
+    | "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534"
+    | "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546"
+    | "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539"
+    | "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)"
+    | "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่"
+    | "พ.ร.บ.มาตราฐานทางจริยธรรม 2562"
+  >;
+  difficulty: QuestionDifficulty;
+}) {
+  const acts = [...SUBJECT_SUBCATEGORIES["Government Law & Ethics"]];
+  const concept = pickOne(LAW_CONCEPTS[input.subcategory]);
+  const stemTemplates = [
+    `ข้อใดเป็นสาระสำคัญของ ${input.subcategory}?`,
+    `หากโจทย์กล่าวถึง "${concept.clue}" ข้อสอบนั้นควรอยู่ภายใต้กฎหมายใด?`,
+    `ประเด็น "${concept.clue}" สัมพันธ์กับกฎหมายฉบับใดมากที่สุด?`,
+    `ข้อใดกล่าวถึง ${input.subcategory} ได้ถูกต้องที่สุด?`,
+    `ถ้าหน่วยงานรัฐต้องพิจารณาเรื่อง "${concept.clue}" ควรอ้างอิงกฎหมายใด?`
+  ];
+  const question = pickOne(stemTemplates);
+  const correct = input.subcategory;
+  const wrongs = shuffle(acts.filter((act) => act !== correct)).slice(0, 3);
+  const choices = shuffle([correct, ...wrongs]);
+
+  return {
+    question,
+    choices,
+    correct,
+    explanation: `${concept.explanation} จึงเข้ากับ ${input.subcategory}`
+  };
+}
+
 function extractJsonPayload(raw: string) {
   const fencedMatch = raw.match(/```json\s*([\s\S]*?)```/i) ?? raw.match(/```\s*([\s\S]*?)```/i);
   const candidate = fencedMatch?.[1] ?? raw;
@@ -209,6 +306,7 @@ function normalizeGeneratedRows(
       : [];
 
   const seen = new Set<string>();
+  const seenStemFingerprints = new Set<string>();
 
   return rowsArray.flatMap((item) => {
     if (!item || typeof item !== "object") {
@@ -256,10 +354,12 @@ function normalizeGeneratedRows(
     };
 
     const fingerprint = buildRowFingerprint(normalizedRow);
-    if (seen.has(fingerprint)) {
+    const stemFingerprint = buildRowStemFingerprint(normalizedRow);
+    if (seen.has(fingerprint) || seenStemFingerprints.has(stemFingerprint)) {
       return [];
     }
     seen.add(fingerprint);
+    seenStemFingerprints.add(stemFingerprint);
     return [normalizedRow];
   });
 }
@@ -331,16 +431,42 @@ export async function generateQuestionsWithWangchanNlp(input: {
   count: number;
   difficulty: QuestionDifficulty;
 }): Promise<Array<Omit<QuestionRecord, "id" | "createdAt">>> {
-  try {
-    const generated = await generateQuestionsWithThaiModel(input);
-    if (generated.length > 0) {
-      return generated;
+  const collected: Array<Omit<QuestionRecord, "id" | "createdAt">> = [];
+  const seenFingerprints = new Set<string>();
+  const seenStemFingerprints = new Set<string>();
+
+  const appendUnique = (rows: Array<Omit<QuestionRecord, "id" | "createdAt">>) => {
+    for (const row of rows) {
+      const fingerprint = buildRowFingerprint(row);
+      const stemFingerprint = buildRowStemFingerprint(row);
+      if (seenFingerprints.has(fingerprint) || seenStemFingerprints.has(stemFingerprint)) {
+        continue;
+      }
+
+      seenFingerprints.add(fingerprint);
+      seenStemFingerprints.add(stemFingerprint);
+      collected.push(row);
+
+      if (collected.length >= input.count) {
+        break;
+      }
     }
+  };
+
+  try {
+    appendUnique(await generateQuestionsWithThaiModel(input));
   } catch {
     // Fall back to template generation if hosted inference is unavailable or malformed.
   }
 
-  return generateQuestionsWithTemplates(input);
+  if (collected.length < input.count) {
+    appendUnique(await generateQuestionsWithTemplates({
+      ...input,
+      count: input.count - collected.length
+    }));
+  }
+
+  return collected;
 }
 
 export function getSupportedSubcategories(subject: ExamCategory) {
@@ -431,6 +557,7 @@ export async function generateQuestionsWithTemplates(input: {
 }): Promise<Array<Omit<QuestionRecord, "id" | "createdAt">>> {
   const rows: Array<Omit<QuestionRecord, "id" | "createdAt">> = [];
   const seenFingerprints = new Set<string>();
+  const seenStemFingerprints = new Set<string>();
   const maxAttempts = Math.max(50, input.count * 6);
   let attempts = 0;
 
@@ -441,6 +568,7 @@ export async function generateQuestionsWithTemplates(input: {
     let question = "";
     let choices: string[] = [];
     let correct = "";
+    let explanation = "";
 
     if (subject === "Analytical Thinking") {
       const a = randInt(2, diff === "easy" ? 12 : diff === "medium" ? 30 : 120);
@@ -450,6 +578,7 @@ export async function generateQuestionsWithTemplates(input: {
       correct = op === "+" ? String(b) : String(-b);
       const wrongs = [String(b + 1), String(Math.max(1, b - 1)), String(b + 2)];
       choices = shuffle([correct, ...wrongs]);
+      explanation = `แก้สมการให้ได้ค่า x = ${correct}`;
     } else if (subject === "Thai Language") {
       const words = ["ความหมาย", "คำศัพท์", "ประโยค", "การอ่าน", "การสะกด"];
       const target = words[randInt(0, words.length - 1)];
@@ -457,6 +586,7 @@ export async function generateQuestionsWithTemplates(input: {
       correct = target;
       const wrongs = shuffle(words.filter((w) => w !== target)).slice(0, 3);
       choices = shuffle([correct, ...wrongs]);
+      explanation = `คำที่ใกล้เคียงกับ "${correct}" คือ "${correct}"`;
     } else if (subject === "English Language") {
       const vocab = [
         ["big", "large"],
@@ -469,18 +599,26 @@ export async function generateQuestionsWithTemplates(input: {
       correct = pair[1];
       const wrongs = shuffle(vocab.map((p) => p[1]).filter((w) => w !== correct)).slice(0, 3);
       choices = shuffle([correct, ...wrongs]);
+      explanation = `Synonym of ${pair[0]} is ${correct}`;
     } else {
-      const acts = [...SUBJECT_SUBCATEGORIES["Government Law & Ethics"]];
       // If the admin requested a specific subcategory (act) and it's supported,
       // use it consistently for generated questions instead of picking randomly.
       const requestedAct = isSupportedSubcategory("Government Law & Ethics", input.subcategory)
         ? input.subcategory
         : null;
-      const act = requestedAct ?? acts[randInt(0, acts.length - 1)];
-      question = `ข้อใดเกี่ยวข้องกับ ${act}?`;
-      correct = act;
-      const wrongs = shuffle(acts.filter((a) => a !== act)).slice(0, 3);
-      choices = shuffle([correct, ...wrongs]);
+      const act = (requestedAct ?? getDefaultSubcategory("Government Law & Ethics")) as Extract<ExamSubcategory,
+        | "พ.ร.บ.ระเบียบบริหารราชการแผ่นดิน 2534"
+        | "พ.ร.ฎ.วิธีการบริหารกิจการบ้านเมืองที่ดี 2546"
+        | "พ.ร.บ.วิธีปฏิบัติราชการทางปกครอง 2539"
+        | "ป.อ.2499 (ในส่วนความผิดต่อตำแหน่งหน้าที่ราชการ)"
+        | "พ.ร.บ.ความรับผิดและการละเมิดของเจ้าหน้าที่"
+        | "พ.ร.บ.มาตราฐานทางจริยธรรม 2562"
+      >;
+      const lawQuestion = createLawQuestion({ subcategory: act, difficulty: diff });
+      question = lawQuestion.question;
+      correct = lawQuestion.correct;
+      choices = lawQuestion.choices;
+      explanation = lawQuestion.explanation;
     }
 
     // normalize and build fingerprint similar to question-service
@@ -491,12 +629,14 @@ export async function generateQuestionsWithTemplates(input: {
     const correctIndex = choices.indexOf(correct);
     const correctText = correctIndex >= 0 ? choiceNorms[correctIndex] : "";
     const fingerprint = [qNorm, sortedChoices.join("||"), correctText].join("||");
+    const stemFingerprint = [subject.toLowerCase(), String(input.subcategory).toLowerCase(), qNorm].join("||");
 
-    if (seenFingerprints.has(fingerprint)) {
+    if (seenFingerprints.has(fingerprint) || seenStemFingerprints.has(stemFingerprint)) {
       continue;
     }
 
     seenFingerprints.add(fingerprint);
+    seenStemFingerprints.add(stemFingerprint);
 
     // determine subcategory: use provided if valid, else infer per-question
     const finalSubcategory = isSupportedSubcategory(subject, input.subcategory)
@@ -514,8 +654,8 @@ export async function generateQuestionsWithTemplates(input: {
       choice_b: choices[1] ?? "",
       choice_c: choices[2] ?? "",
       choice_d: choices[3] ?? "",
-      correct_answer: ([("A" as const), ("B" as const), ("C" as const), ("D" as const)][choices.indexOf(correct)]) || "A",
-      explanation: subject === "Analytical Thinking" ? `แก้สมการให้ได้ค่า x = ${correct}` : subject === "Thai Language" ? `คำที่ใกล้เคียงกับ "${correct}" คือ "${correct}"` : subject === "English Language" ? `Synonym of ${choices[choices.indexOf(correct)]} is ${correct}` : `กฎหมายที่เกี่ยวข้องคือ ${correct}`,
+      correct_answer: correctKey || "A",
+      explanation,
       difficulty: diff,
       source: "llm"
     });

@@ -18,15 +18,23 @@ function fingerprint(row: QuestionRecord) {
   return [q, sorted.join("||"), correctText, normalizeText(sub)].join("||");
 }
 
+function stemFingerprint(row: QuestionRecord) {
+  const sub = row.subcategory || getDefaultSubcategory(row.subject);
+  return [normalizeText(row.subject), normalizeText(sub), normalizeText(row.question)].join("||");
+}
+
 async function run() {
   const rows = await loadQuestions();
   const seen = new Set<string>();
+  const seenStems = new Set<string>();
   const deduped: QuestionRecord[] = [];
 
   for (const row of rows) {
     const fp = fingerprint(row);
-    if (seen.has(fp)) continue;
+    const stemFp = stemFingerprint(row);
+    if (seen.has(fp) || seenStems.has(stemFp)) continue;
     seen.add(fp);
+    seenStems.add(stemFp);
     // ensure subcategory exists
     if (!row.subcategory || String(row.subcategory).trim() === "") {
       row.subcategory = getDefaultSubcategory(row.subject as any);

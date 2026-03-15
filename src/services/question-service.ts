@@ -66,6 +66,16 @@ function buildQuestionFingerprint(
   return [q, sortedChoices.join("||"), correctText].join("||");
 }
 
+function buildQuestionStemFingerprint(
+  row: Pick<QuestionRecord, "subject" | "subcategory" | "question">
+) {
+  const subject = String(row.subject).replace(/\s+/g, " ").trim().toLowerCase();
+  const subcategory = String(row.subcategory || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const question = String(row.question).replace(/\s+/g, " ").trim().toLowerCase();
+
+  return [subject, subcategory, question].join("||");
+}
+
 export async function getQuestions(filters?: { category?: ExamCategory; subject?: ExamCategory; subcategory?: ExamSubcategory | "all"; difficulty?: QuestionDifficulty }) {
   const questions = await getAllQuestions();
   const subject = filters?.subject ?? filters?.category;
@@ -90,7 +100,9 @@ export async function getQuestions(filters?: { category?: ExamCategory; subject?
 export async function appendStructuredQuestions(rows: Array<Omit<QuestionRecord, "id" | "createdAt">>) {
   const existing = await getAllQuestions();
   const existingFingerprints = new Set(existing.map((row) => buildQuestionFingerprint(row)));
+  const existingStemFingerprints = new Set(existing.map((row) => buildQuestionStemFingerprint(row)));
   const incomingFingerprints = new Set<string>();
+  const incomingStemFingerprints = new Set<string>();
 
   const preparedRows: QuestionRecord[] = rows
     .filter((row) => {
@@ -102,12 +114,23 @@ export async function appendStructuredQuestions(rows: Array<Omit<QuestionRecord,
         choice_d: row.choice_d,
         correct_answer: row.correct_answer
       });
+      const stemFingerprint = buildQuestionStemFingerprint({
+        subject: row.subject,
+        subcategory: row.subcategory || getDefaultSubcategory(row.subject),
+        question: row.question
+      });
 
-      if (existingFingerprints.has(fingerprint) || incomingFingerprints.has(fingerprint)) {
+      if (
+        existingFingerprints.has(fingerprint)
+        || incomingFingerprints.has(fingerprint)
+        || existingStemFingerprints.has(stemFingerprint)
+        || incomingStemFingerprints.has(stemFingerprint)
+      ) {
         return false;
       }
 
       incomingFingerprints.add(fingerprint);
+      incomingStemFingerprints.add(stemFingerprint);
       return true;
     })
     .map((row) => ({
