@@ -93,7 +93,7 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
               ))}
             </div>
             <p className="mt-4 text-sm text-slate-700 dark:text-slate-200">
-              {translate("exam.correct-answer")}: <span className="font-semibold text-accent">{question.correct_answer}</span>
+              {translate("exam.correct-answer")}: <span className="font-semibold text-accent">{question.correct_answer || "Answer not available"}</span>
             </p>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{translate("exam.explanation")}: {question.explanation}</p>
           </article>

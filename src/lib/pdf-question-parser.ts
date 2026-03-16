@@ -3,16 +3,31 @@ function normalizeLine(value: string) {
 }
 
 export function splitPdfIntoQuestionCandidates(text: string) {
-  const normalized = text
-    .split("\n")
-    .map(normalizeLine)
-    .filter(Boolean)
-    .join("\n");
+  const banned = [
+    "explanation",
+    "answer explanation",
+    "imported with parser",
+    "metadata",
+    "footer",
+    "page",
+    "page number"
+  ];
 
-  return normalized
-    .split(/(?=(?:Question\s*:?|\d+[\.)]\s))/gi)
-    .map((block) => block.trim())
-    .filter((block) => block.length > 30);
+  const lines = text.split("\n").map(normalizeLine).filter(Boolean);
+  // filter out obvious footer/metadata lines
+  const cleaned = lines.filter((l) => !banned.some((b) => l.toLowerCase().includes(b)));
+  const joined = cleaned.join("\n");
+
+  // Split by lines that start with a number followed by a dot
+  const blocks = joined.split(/(?=^\s*\d+\.)/m).map((b) => b.trim());
+
+  // Keep only blocks that look like a question with choices A. B. C. D.
+  return blocks.filter((block) => {
+    if (!block || block.length < 30) return false;
+    // must contain A. B. C. D. markers
+    const hasChoices = /\bA\.|\bB\.|\bC\.|\bD\./.test(block);
+    return hasChoices && /\d+\./.test(block);
+  });
 }
 
 function mapThaiChoiceLabel(label: string) {

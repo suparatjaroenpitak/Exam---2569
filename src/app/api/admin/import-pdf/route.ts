@@ -7,6 +7,8 @@ import { normalizeSubject, getDefaultSubcategory } from "@/lib/constants";
 import type { QuestionDifficulty, ExamSubject, AnswerKey, QuestionRecord } from "@/lib/types";
 import { extractQuestionsFromPdfWithWangchanNlp as extractQuestionsFromThaiNlp } from "@/services/wangchan-nlp-service";
 import { appendStructuredQuestions } from "@/services/exam-service";
+import { aiValidateQuestion } from "@/services/ai-validator";
+import { appendImportLog } from "@/lib/import-log";
 
 export async function POST(request: NextRequest) {
   const guard = await requireApiAdmin(request);
@@ -57,16 +59,34 @@ export async function POST(request: NextRequest) {
           .filter((r): r is Exclude<typeof r, null> => r !== null);
 
     if (structured.length === 0) {
+      await appendImportLog({ import_time: new Date().toISOString(), total_detected: 0, valid_questions: 0, rejected_questions: 0, reason: "no candidates" });
       return NextResponse.json({ message: "No valid questions were parsed from the PDF" }, { status: 400 });
     }
 
-    const inserted = await appendStructuredQuestions(structured as any);
+    const validCandidates: typeof structured = [] as any;
+    const rejected: Array<{ candidate: any; reason: string }> = [];
 
-    return NextResponse.json({
-      message: requestedThaiNlp
-        ? `Imported ${inserted.length} questions from PDF using Thai NLP parser`
-        : `Imported ${inserted.length} questions from PDF`
+    for (const s of structured) {
+      const choices = [s.choice_a, s.choice_b, s.choice_c, s.choice_d];
+      const aiResult = await aiValidateQuestion({ question: s.question, choices, correct: s.correct_answer });
+      if (!aiResult.valid) {
+        rejected.push({ candidate: s, reason: JSON.stringify(aiResult.reasons) });
+        continue;
+      }
+      validCandidates.push(s);
+    }
+
+    const inserted = validCandidates.length > 0 ? await appendStructuredQuestions(validCandidates as any) : [];
+
+    await appendImportLog({
+      import_time: new Date().toISOString(),
+      total_detected: structured.length,
+      valid_questions: inserted.length,
+      rejected_questions: rejected.length,
+      reason: rejected.slice(0, 10)
     });
+
+    return NextResponse.json({ message: `Detected ${structured.length}, imported ${inserted.length}, rejected ${rejected.length}` });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "PDF import failed" },
