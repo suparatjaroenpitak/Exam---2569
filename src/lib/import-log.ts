@@ -25,3 +25,14 @@ export async function appendImportLog(entry: Record<string, unknown>) {
   logs.push(entry);
   await writeFile(importLogPath, JSON.stringify(logs, null, 2), "utf8");
 }
+
+export async function readImportLog() {
+  await ensureDir();
+  try {
+    if (existsSync(importLogPath)) {
+      const raw = await readFile(importLogPath, "utf8");
+      return JSON.parse(raw || "[]");
+    }
+  } catch (e) {}
+  return [];
+}

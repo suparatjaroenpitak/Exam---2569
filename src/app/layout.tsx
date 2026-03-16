@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th">
-      <body className={`${headingFont.variable} ${bodyFont.variable} font-[family-name:var(--font-body)] antialiased`}>
+      <body suppressHydrationWarning className={`${headingFont.variable} ${bodyFont.variable} font-[family-name:var(--font-body)] antialiased`}>
         <PreferencesProvider>{children}</PreferencesProvider>
       </body>
     </html>

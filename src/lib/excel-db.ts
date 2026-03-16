@@ -107,19 +107,59 @@ async function appendRowsAtomic<T extends object>(filePath: string, sheetName: s
 
   // create a backup before modifying
   await backupFile(filePath, questionsBackupFilePath);
+  // Read existing rows and rewrite the sheet with combined rows. Rewriting is
+  // more robust than streaming append via sheet_add_json which can behave
+  // inconsistently across xlsx versions and edge cases.
+  const existingRows = await readRows<T>(filePath, sheetName, headers);
+  const combined = existingRows.concat(rows as T[]);
 
-  const workbook = XLSX.readFile(filePath);
-  let worksheet = workbook.Sheets[sheetName];
-  if (!worksheet) {
-    worksheet = XLSX.utils.json_to_sheet([], { header: headers as string[] });
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  // Overwrite the sheet with combined rows (preserves header ordering)
+  await writeRows<T>(filePath, sheetName, combined, headers);
+}
+
+// Transactional append: backup file, append rows, verify write succeeded, rollback on failure
+export async function appendQuestionsTransactional<T extends object>(filePath: string, sheetName: string, rows: T[], headers: Array<keyof T>) {
+  // create a timestamped backup before modifying
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupPath = filePath.replace(/\.xlsx$/, `.${timestamp}.backup.xlsx`);
+
+  await ensureDir();
+  // make primary backup (questions_backup.xlsx) and timestamped backup
+  await backupFile(filePath, questionsBackupFilePath);
+  try {
+    if (existsSync(filePath)) {
+      await copyFile(filePath, backupPath);
+    }
+  } catch (err) {
+    console.warn("Failed to create timestamped backup:", err);
   }
 
-  // Append rows to existing worksheet without replacing header
-  XLSX.utils.sheet_add_json(worksheet, rows as any[], { origin: -1, skipHeader: true });
+  try {
+    await appendRowsAtomic<T>(filePath, sheetName, rows, headers);
+    return { success: true };
+  } catch (err) {
+    // rollback from primary backup if possible
+    try {
+      if (existsSync(questionsBackupFilePath)) {
+        await copyFile(questionsBackupFilePath, filePath);
+      }
+    } catch (rbErr) {
+      console.error("Failed to rollback after append failure:", rbErr);
+    }
+    throw err;
+  }
+}
 
-  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-  await writeFile(filePath, buffer);
+export async function restoreFromBackup(filePath: string, backupPath = questionsBackupFilePath) {
+  try {
+    if (existsSync(backupPath)) {
+      await copyFile(backupPath, filePath);
+      return true;
+    }
+  } catch (err) {
+    console.error("Failed to restore backup:", err);
+  }
+  return false;
 }
 
 export async function loadQuestions() {

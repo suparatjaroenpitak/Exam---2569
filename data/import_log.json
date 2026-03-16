@@ -1,0 +1,17 @@
+[
+  {
+    "import_time": "2026-03-16T11:48:55.676Z",
+    "total_detected": 17,
+    "valid_questions": 17,
+    "rejected_questions": 0,
+    "reason": []
+  },
+  {
+    "import_time": "2026-03-16T12:22:29.152Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 1,
+    "database_total_after": 1,
+    "rejected_questions": 0
+  }
+]

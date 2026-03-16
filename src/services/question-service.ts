@@ -1,5 +1,7 @@
 import { appendQuestions, loadQuestions } from "@/lib/excel-db";
 import { EXAM_CATEGORIES, getDefaultSubcategory, normalizeSubject } from "@/lib/constants";
+import { env } from "@/lib/env";
+import path from "path";
 import type { ExamCategory, ExamSubcategory, QuestionDifficulty, QuestionRecord, QuestionStats } from "@/lib/types";
 
 const QUESTION_CACHE_TTL_MS = 15_000;
@@ -147,9 +149,32 @@ export async function appendStructuredQuestions(rows: Array<Omit<QuestionRecord,
     return [];
   }
 
-  await appendQuestions(preparedRows);
-  invalidateQuestionCache();
-  return preparedRows;
+  // Persistence pipeline per rules: verify before and after counts, transactional append
+  const totalBefore = (await loadQuestions()).length;
+
+  // Save prepared rows using excel-db append which performs append-only writes and creates backups.
+  const result = await appendQuestions(preparedRows as any);
+
+  // After save, verify counts to ensure persistence (Rule 4)
+  const totalAfter = (await loadQuestions()).length;
+
+  const appendedCount = (result && (result as any).appended) ? (result as any).appended : 0;
+
+  if (appendedCount === preparedRows.length && totalAfter === totalBefore + appendedCount) {
+    invalidateQuestionCache();
+    return preparedRows;
+  }
+
+  // Partial save or verification mismatch -> attempt rollback from backup and throw
+  try {
+    const { restoreFromBackup } = await import("@/lib/excel-db");
+    const filePath = path.join(process.cwd(), env.dataDir ?? "data", "questions.xlsx");
+    await restoreFromBackup(filePath);
+  } catch (e) {
+    // ignore rollback errors
+  }
+
+  throw new Error("Database save mismatch: persisted count does not match expected count");
 }
 
 export async function getQuestionStats(): Promise<QuestionStats> {
@@ -166,4 +191,10 @@ export async function getQuestionStats(): Promise<QuestionStats> {
       hard: questions.filter((question) => question.difficulty === "hard").length
     }
   };
+}
+
+// Force reload questions from disk and return fresh normalized list (no cache)
+export async function refreshQuestionList() {
+  invalidateQuestionCache();
+  return await getAllQuestions();
 }
