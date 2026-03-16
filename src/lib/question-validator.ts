@@ -37,10 +37,12 @@ export function isPdfCandidateValidText(raw: string) {
 }
 
 // map the project's broader subject names to strict short codes
+import { EXAM_CATEGORIES } from "@/lib/constants";
+
 export function mapSubjectToStrict(subject: string) {
   const s = String(subject || "").toLowerCase();
-  if (s.includes("analytical") || s.includes("math") || s.includes("analytic")) return "math";
-  if (s.includes("thai")) return "thai";
-  if (s.includes("english")) return "english";
-  return "law"; // default to law for government/law categories
+  if (s.includes("analytical") || s.includes("math") || s.includes("analytic")) return EXAM_CATEGORIES[0];
+  if (s.includes("thai") && !s.includes("law")) return EXAM_CATEGORIES[1];
+  if (s.includes("english")) return EXAM_CATEGORIES[2];
+  return EXAM_CATEGORIES[3]; // default to Government Law & Ethics
 }
