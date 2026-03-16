@@ -194,9 +194,10 @@ export async function appendQuestions(rows: QuestionRecord[]) {
         continue;
       }
 
+      const strictShort = mapSubjectToStrict(String(r.subject || r.category || ""));
       const strict = {
         id,
-        subject: mapSubjectToStrict(String(r.subject || r.category || "")),
+        subject: strictShort,
         subcategory: String(r.subcategory || "").trim() || String(r.category || "").trim() || "",
         question: String(r.question || "").trim(),
         choice_a: String(r.choice_a || "").trim(),
@@ -232,10 +233,12 @@ export async function appendQuestions(rows: QuestionRecord[]) {
         continue;
       }
 
+      // Store the human-readable category/subject names for UI compatibility
+      const subjectFull = mapStrictToFull(strict.subject as string);
       toAppend.push({
         id: strict.id,
-        subject: strict.subject,
-        category: r.category ?? r.subject,
+        subject: subjectFull,
+        category: subjectFull,
         subcategory: strict.subcategory,
         difficulty: strict.difficulty,
         question: strict.question,

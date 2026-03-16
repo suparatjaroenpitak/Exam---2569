@@ -13,5 +13,53 @@
     "database_total_before": 1,
     "database_total_after": 1,
     "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:26:55.827Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 1,
+    "database_total_after": 1,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:27:03.582Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 1,
+    "database_total_after": 1,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:27:06.180Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 1,
+    "database_total_after": 1,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:27:07.770Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 1,
+    "database_total_after": 1,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:27:08.659Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 1,
+    "database_total_after": 1,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:36:19.702Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 1,
+    "database_total_after": 21,
+    "rejected_questions": 0
   }
 ]

@@ -9,7 +9,8 @@ const QUESTION_CACHE_TTL_MS = 15_000;
 let questionCache: { expiresAt: number; rows: QuestionRecord[] } | null = null;
 
 function createQuestionId() {
-  return `question_${crypto.randomUUID()}`;
+  // return a plain UUID (no prefix) so it matches the strict UUID schema
+  return crypto.randomUUID();
 }
 
 function normalizeQuestion(row: QuestionRecord): QuestionRecord | null {
