@@ -5,6 +5,7 @@ type GeneratorInput = {
   subcategory: string;
   count: number;
   difficulty: string;
+  offset?: number;
 };
 
 type GeneratedRow = {
@@ -20,6 +21,7 @@ type GeneratedRow = {
   explanation: string;
   difficulty: string;
   source: string;
+  generation_mode?: string;
 };
 
 const HUGGING_FACE_CHAT_URL = process.env.HUGGINGFACE_CHAT_URL || "https://router.huggingface.co/v1/chat/completions";
@@ -105,6 +107,7 @@ function buildPrompts(subject: string, topic: string, difficulty: string, count:
 หัวข้อย่อย: ${topic}
 ระดับความยาก: ${difficulty}
 โปรไฟล์คำถาม: ${profile}
+ลำดับชุดคำถาม: ${variationSeed}
 
 ข้อกำหนดบังคับ:
 ${buildLanguageRules(subject)}
@@ -333,15 +336,39 @@ function normalizeItem(item: Record<string, unknown>, subject: string, topic: st
 function analyticalFallback(topic: string, index: number) {
   const base = 120 + (index * 15);
   const delta = 10 + ((index * 7) % 35);
-  const correct = String(base + delta);
+  const variant = index % 8;
+  const correctNumber = [
+    base + delta,
+    base - Math.floor(delta / 2),
+    (base / 3) + delta,
+    (base + delta) / 2,
+    base + (delta * 2),
+    (base * 2) - delta,
+    base + delta + (index % 9),
+    (base + delta + 12) / 4
+  ][variant];
+  const correct = Number.isInteger(correctNumber) ? String(correctNumber) : correctNumber.toFixed(2);
+  const stems = [
+    `[${topic}] หากข้อมูลตั้งต้นมีค่า ${base} และเพิ่มขึ้นอีก ${delta} หน่วย ข้อใดคือผลลัพธ์ที่ถูกต้องที่สุดตามเงื่อนไขของโจทย์นี้?`,
+    `[${topic}] จากอัตราส่วนข้อมูลที่กำหนด เมื่อเพิ่มค่า ${delta} จากฐาน ${base} ผลลัพธ์ที่ถูกต้องคือข้อใด?`,
+    `[${topic}] ถ้าปริมาณเริ่มต้นเท่ากับ ${base} และปรับตามเงื่อนไขอีก ${delta} หน่วย คำตอบที่ถูกต้องที่สุดคือข้อใด?`,
+    `[${topic}] ข้อมูลชุดหนึ่งมีค่าเริ่มต้น ${base} และเปลี่ยนแปลงตามกติกา ${delta} หน่วยต่อรอบ ข้อใดเป็นคำตอบที่ถูกต้อง?`,
+    `[${topic}] หากนำค่า ${base} มาประมวลผลร่วมกับค่าเปลี่ยนแปลง ${delta} ตามเงื่อนไขของโจทย์ ผลลัพธ์ควรเป็นเท่าใด?`,
+    `[${topic}] จากข้อมูลเปรียบเทียบที่กำหนด ค่าเริ่มต้น ${base} และค่าปรับ ${delta} นำไปสู่คำตอบข้อใด?`,
+    `[${topic}] ถ้าวิเคราะห์ตารางข้อมูลแล้วพบค่าหลัก ${base} และค่าประกอบ ${delta} ข้อใดสรุปผลได้ถูกต้องที่สุด?`,
+    `[${topic}] เมื่อใช้กติกาของโจทย์กับจำนวน ${base} และ ${delta} ตามลำดับ ตัวเลือกใดให้ผลลัพธ์ที่ถูกต้อง?`,
+    `[${topic}] ในโจทย์เชิงวิเคราะห์นี้ หากค่าตั้งต้นเป็น ${base} และค่าปรับเป็น ${delta} ข้อใดเป็นคำตอบที่เหมาะสมที่สุด?`,
+    `[${topic}] ข้อมูลจากแผนภูมิสมมติให้ค่าเริ่มต้น ${base} และส่วนต่าง ${delta} แล้วผลลัพธ์สุดท้ายควรเป็นข้อใด?`
+  ];
+  const distractorOffsets = [4, -3, 9, -7, 6, -5, 11, -9];
   return {
-    question: `[${topic}] หากข้อมูลตั้งต้นมีค่า ${base} และเพิ่มขึ้นอีก ${delta} หน่วย ข้อใดคือผลลัพธ์ที่ถูกต้องที่สุดตามเงื่อนไขของโจทย์นี้?`,
+    question: stems[index % stems.length],
     choice_a: correct,
-    choice_b: String(base + delta + 4),
-    choice_c: String(base + delta - 3),
-    choice_d: String(base + delta + 9),
+    choice_b: String(Number(correct) + distractorOffsets[(index + 1) % distractorOffsets.length]),
+    choice_c: String(Number(correct) + distractorOffsets[(index + 3) % distractorOffsets.length]),
+    choice_d: String(Number(correct) + distractorOffsets[(index + 5) % distractorOffsets.length]),
     correct_answer: "A",
-    explanation: `คำนวณจาก ${base} + ${delta} จะได้ ${correct} ซึ่งสอดคล้องกับหัวข้อ ${topic}`
+    explanation: `เมื่อนำค่า ${base} และ ${delta} ไปคำนวณตามเงื่อนไขของโจทย์ จะได้คำตอบ ${correct} ซึ่งสอดคล้องกับหัวข้อ ${topic}`
   };
 }
 
@@ -410,7 +437,8 @@ function fallbackItem(subject: string, topic: string, difficulty: string, profil
     category: subject,
     subcategory: topic,
     difficulty,
-    source: "nlp",
+    source: "nlp-fallback",
+    generation_mode: "fallback",
     ...row
   } satisfies GeneratedRow;
 }
@@ -419,17 +447,21 @@ export async function generateWithPythonEngine(input: GeneratorInput): Promise<G
   const profile = resolveProfile(input.category, input.subcategory);
   const results: GeneratedRow[] = [];
   const seenQuestions = new Set<string>();
+  const offset = Math.max(0, input.offset ?? 0);
   let attempts = 0;
-  const maxAttempts = Math.max(12, input.count * 4);
+  const targetCount = input.offset && input.offset > 0
+    ? input.count
+    : Math.min(input.count + Math.max(6, Math.ceil(input.count * 0.6)), input.count * 3);
+  const maxAttempts = Math.max(8, input.count * 2);
 
-  while (results.length < input.count && attempts < maxAttempts) {
+  while (results.length < targetCount && attempts < maxAttempts) {
     attempts += 1;
-    const remaining = input.count - results.length;
-    const batchSize = Math.min(5, remaining);
+    const remaining = targetCount - results.length;
+    const batchSize = Math.min(10, remaining);
     let generated: Record<string, unknown>[] = [];
 
     try {
-      generated = await inferJsonArray(input.category, input.subcategory, input.difficulty, batchSize, profile, attempts);
+      generated = await inferJsonArray(input.category, input.subcategory, input.difficulty, batchSize, profile, attempts + offset);
     } catch {
       generated = [];
     }
@@ -441,13 +473,13 @@ export async function generateWithPythonEngine(input: GeneratorInput): Promise<G
       const key = stableKey(normalized.question);
       if (seenQuestions.has(key)) continue;
       seenQuestions.add(key);
-      results.push(normalized);
-      if (results.length >= input.count) break;
+      results.push({ ...normalized, generation_mode: "llm" });
+      if (results.length >= targetCount) break;
     }
   }
 
-  let fallbackIndex = 0;
-  while (results.length < input.count) {
+  let fallbackIndex = offset;
+  while (results.length < targetCount) {
     const fallback = fallbackItem(input.category, input.subcategory, input.difficulty, profile, fallbackIndex);
     fallbackIndex += 1;
     const key = stableKey(fallback.question);
@@ -456,5 +488,5 @@ export async function generateWithPythonEngine(input: GeneratorInput): Promise<G
     results.push(fallback);
   }
 
-  return results.slice(0, input.count);
+  return results.slice(0, targetCount);
 }

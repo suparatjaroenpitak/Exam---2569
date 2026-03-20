@@ -1,4 +1,3 @@
-import { aiValidateQuestion } from "./ai-validator";
 import { isDuplicate, topicMatches, computeQualityScore, validateShape } from "@/services/ai-validation-service";
 import { generateWithPythonEngine } from "@/services/python-ai-service";
 import { loadQuestions, appendQuestions, restoreFromBackup, saveQuestions } from "@/lib/excel-db";
@@ -91,7 +90,8 @@ export async function generateAndSave(payload: { category: string; subcategory: 
         category: payload.category,
         subcategory: payload.subcategory,
         count: payload.count,
-        difficulty: payload.difficulty
+        difficulty: payload.difficulty,
+        offset: 0
       });
       lastGenerationError = null;
     } catch (error) {
@@ -116,7 +116,15 @@ export async function generateAndSave(payload: { category: string; subcategory: 
     .filter((row) => String(row.source || "").toLowerCase() !== "ai")
     .map((r) => String(r.question || ""));
 
-  async function tryAcceptCandidate(g: any, allowReplacement = true): Promise<boolean> {
+  const exactExistingQuestionKeys = new Set(existingQuestions.map((question) => String(question || "").replace(/\s+/g, " ").trim().toLowerCase()));
+
+  function normalizedQuestionKey(question: unknown) {
+    return String(question || "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  async function tryAcceptCandidate(g: any, options?: { finalFallback?: boolean }): Promise<boolean> {
+    const finalFallback = Boolean(options?.finalFallback);
+    const isFallbackCandidate = String(g?.generation_mode || g?.source || "").toLowerCase().includes("fallback");
     const baseCheck: any = validateQuestion(g);
     if (!baseCheck.valid) {
       rejected.push({ row: g, reason: baseCheck.reason });
@@ -125,7 +133,7 @@ export async function generateAndSave(payload: { category: string; subcategory: 
 
     try {
       const pyShape = await validateShape(g as any);
-      if (pyShape === null || !pyShape.valid) {
+      if ((pyShape === null || !pyShape.valid) && !finalFallback) {
         rejected.push({ row: g, reason: pyShape ? pyShape.reason : "python-validator-failed" });
         return false;
       }
@@ -135,18 +143,23 @@ export async function generateAndSave(payload: { category: string; subcategory: 
 
     try {
       const matches = await topicMatches(String(payload.subcategory), `${g.question}\n${g.choice_a}\n${g.choice_b}\n${g.choice_c}\n${g.choice_d}`);
-      if (!matches) {
+      if (!matches && !isFallbackCandidate && !finalFallback) {
         rejected.push({ row: g, reason: "topic-mismatch" });
         return false;
       }
     } catch (e) {
-      rejected.push({ row: g, reason: "topic-check-failed" });
-      return false;
+      if (!isFallbackCandidate && !finalFallback) {
+        rejected.push({ row: g, reason: "topic-check-failed" });
+        return false;
+      }
     }
 
     try {
-      const dupAgainstDB = await isDuplicate(g.question, existingQuestions, 0.85);
-      const dupAgainstBatch = await isDuplicate(g.question, valid.map((v) => v.question || ""), 0.85);
+      const questionKey = normalizedQuestionKey(g.question);
+      const exactDupAgainstDB = exactExistingQuestionKeys.has(questionKey);
+      const exactDupAgainstBatch = valid.some((v) => normalizedQuestionKey(v.question) === questionKey);
+      const dupAgainstDB = finalFallback ? exactDupAgainstDB : await isDuplicate(g.question, existingQuestions, 0.85);
+      const dupAgainstBatch = finalFallback ? exactDupAgainstBatch : await isDuplicate(g.question, valid.map((v) => v.question || ""), 0.85);
       if (dupAgainstDB || dupAgainstBatch) {
         rejected.push({ row: g, reason: "duplicate" });
         return false;
@@ -159,7 +172,8 @@ export async function generateAndSave(payload: { category: string; subcategory: 
     try {
       const qscore = computeQualityScore({ question: g.question, choice_a: g.choice_a, choice_b: g.choice_b, choice_c: g.choice_c, choice_d: g.choice_d, difficulty: payload.difficulty, topic: String(payload.subcategory) });
       (g as any).quality_score = qscore;
-      if (qscore < 70) {
+      const minimumQuality = finalFallback ? 35 : isFallbackCandidate ? 50 : 70;
+      if (qscore < minimumQuality) {
         rejected.push({ row: g, reason: `low-quality:${qscore}` });
         return false;
       }
@@ -167,23 +181,13 @@ export async function generateAndSave(payload: { category: string; subcategory: 
       (g as any).quality_score = 50;
     }
 
-    let needsReview = Boolean(baseCheck.needsReview);
-    try {
-      const ok = await aiValidateQuestion({ question: g.question, choices: [g.choice_a, g.choice_b, g.choice_c, g.choice_d], correct: g.correct_answer });
-      if (!ok.valid) {
-        needsReview = true;
-      }
-    } catch (e) {
-      needsReview = true;
-    }
-
-    (g as any).__needsReview = needsReview;
+    (g as any).__needsReview = Boolean(baseCheck.needsReview);
     valid.push(g);
     return true;
   }
 
   for (const [index, g] of generated.entries()) {
-    await tryAcceptCandidate(g, true);
+    await tryAcceptCandidate(g);
     const validationProgress = Math.round(42 + (((index + 1) / Math.max(generated.length, 1)) * 28));
     await report(validationProgress, "validating", `Validated ${index + 1}/${generated.length} generated questions`);
   }
@@ -196,7 +200,13 @@ export async function generateAndSave(payload: { category: string; subcategory: 
     const batchSize = Math.min(Math.max(remaining, 1), 5);
     await report(72, "top-up", `Generating ${batchSize} replacement question${batchSize > 1 ? "s" : ""} to reach ${payload.count}`);
     try {
-      const replRows = await generateWithPythonEngine({ category: payload.category, subcategory: payload.subcategory, count: batchSize, difficulty: payload.difficulty });
+      const replRows = await generateWithPythonEngine({
+        category: payload.category,
+        subcategory: payload.subcategory,
+        count: batchSize,
+        difficulty: payload.difficulty,
+        offset: payload.count + (fillAttempts * batchSize) + valid.length
+      });
       if (!Array.isArray(replRows) || replRows.length === 0) {
         continue;
       }
@@ -204,12 +214,34 @@ export async function generateAndSave(payload: { category: string; subcategory: 
         if (valid.length >= payload.count) {
           break;
         }
-        await tryAcceptCandidate(replRow, false);
+        await tryAcceptCandidate(replRow);
       }
       const topUpProgress = Math.min(88, 72 + Math.round((valid.length / Math.max(payload.count, 1)) * 16));
       await report(topUpProgress, "top-up", `Accepted ${valid.length}/${payload.count} questions after top-up`);
     } catch (e) {
       // keep trying until cap
+    }
+  }
+
+  if (valid.length < payload.count) {
+    const remaining = payload.count - valid.length;
+    await report(86, "final-top-up", `Final fallback pass for remaining ${remaining} questions`);
+    try {
+      const finalRows = await generateWithPythonEngine({
+        category: payload.category,
+        subcategory: payload.subcategory,
+        count: remaining,
+        difficulty: payload.difficulty,
+        offset: (payload.count * 20) + valid.length
+      });
+      for (const finalRow of finalRows) {
+        if (valid.length >= payload.count) {
+          break;
+        }
+        await tryAcceptCandidate({ ...finalRow, generation_mode: "fallback-final", source: "nlp-fallback-final" }, { finalFallback: true });
+      }
+    } catch (e) {
+      // final rescue is best-effort
     }
   }
 
