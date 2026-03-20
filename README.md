@@ -139,7 +139,7 @@ TRANSFORMERS_MODEL=Qwen/Qwen2.5-1.5B-Instruct
 TRANSFORMERS_MAX_NEW_TOKENS=1400
 TRANSFORMERS_TEMPERATURE=0.95
 DEFAULT_ADMIN_EMAIL=admin@example.com
-DEFAULT_ADMIN_PASSWORD=Admin12345!
+DEFAULT_ADMIN_PASSWORD=change-me-in-env
 ```
 
 ## การเปลี่ยนแปลงการใช้งาน AI/NLP ในเวอร์ชันนี้
@@ -154,9 +154,9 @@ DEFAULT_ADMIN_PASSWORD=Admin12345!
 
 สำหรับการสร้างข้อสอบด้วย Transformers ต้องตั้งค่า `HUGGINGFACE_API_KEY` เป็น token แบบ fine-grained ที่มีสิทธิ์ `Make calls to Inference Providers` มิฉะนั้น route สร้างข้อสอบจะตอบกลับด้วย error ชัดเจนและจะไม่ล้างคลังข้อสอบเดิม
 
-ตัวอย่าง 
+ตัวอย่าง
 
-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
+hf_your_huggingface_token_here
 
 
 ขั้นตอนการตั้งค่าสำหรับการพัฒนา (local):
@@ -297,7 +297,7 @@ npm run lint
 ถ้ายังไม่ได้เปลี่ยนค่าใน `.env.local` ระบบจะใช้ค่าตาม `.env.example`
 
 - Email: `admin@example.com`
-- Password: `Admin12345!`
+- Password: `เปลี่ยนผ่าน DEFAULT_ADMIN_PASSWORD ใน .env.local`
 
 
 ส่วนอันนี้ ผม ทดสอบ เว็บ ทำข้อสอบ กพ ภาค ก ได้ที่ 
@@ -471,7 +471,7 @@ Environment variables ที่ควรตั้งในหน้า Environme
 
 - `DATA_DIR = data`
 - `DEFAULT_ADMIN_EMAIL = asdrtsuparat2019@gmail.com`
-- `DEFAULT_ADMIN_PASSWORD = ExamGP2569!Admin` (หรือรหัสที่คุณต้องการ)
+- `DEFAULT_ADMIN_PASSWORD = <set-a-strong-password>`
 - `JWT_SECRET` = ให้ Render generate หรือใส่ string ยาวสุ่ม
 - `OPEN_SOURCE_LLM_API_KEY` = (ใส่เมื่อพร้อมใช้ฟีเจอร์ AI)
 - `OPEN_SOURCE_LLM_BASE_URL = https://openrouter.ai/api/v1`
