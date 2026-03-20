@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: python3 -m ensurepip --upgrade && python3 -m pip install --upgrade pip && python3 -m pip install --target .render-python -r ai_engine/requirements.txt && python3 -c "import sys; sys.path.insert(0, '.render-python'); import transformers, huggingface_hub; print(transformers.__version__)" && npm install && npm run build
+    buildCommand: python3 -m ensurepip --upgrade && python3 -m pip install --upgrade pip && python3 -m pip install --target .render-python -r ai_engine/requirements.txt && python3 -c "import sys; sys.path.insert(0, '.render-python'); import huggingface_hub; print(huggingface_hub.__version__)" && npm install && npm run build
     startCommand: npm run start
     autoDeployTrigger: commit
     healthCheckPath: /login

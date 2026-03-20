@@ -9,8 +9,7 @@ from typing import Dict, List, Optional
 try:
     from transformers import AutoTokenizer
 except Exception as exc:
-    print(f"Transformers import failed: {exc}", file=sys.stderr)
-    sys.exit(1)
+    AutoTokenizer = None
 
 try:
     from huggingface_hub import InferenceClient
@@ -90,6 +89,8 @@ def resolve_profile(subject: str, topic: str) -> str:
 
 
 def get_tokenizer(model_name: str):
+    if AutoTokenizer is None:
+        return None
     base_model_name = model_name.split(":", 1)[0]
     if model_name in TOKENIZER_CACHE:
         return TOKENIZER_CACHE[model_name]
