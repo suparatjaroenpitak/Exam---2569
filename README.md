@@ -439,7 +439,7 @@ Add Python unit tests under `ai_engine/tests/` (pytest) to validate topic classi
 
 คำสั่งที่ใช้บน Render:
 
-- Build: `npm install && npm run build`
+- Build: `python3 -m ensurepip --upgrade && python3 -m pip install --upgrade pip && python3 -m pip install --user -r ai_engine/requirements.txt && npm install && npm run build`
 - Start: `npm run start`
 
 ถ้าภายหลังอัปเกรดเป็น plan ที่รองรับ persistent disk สามารถ mount disk ไปที่ `/opt/render/project/src/data` และใช้ `DATA_DIR=data` ต่อได้เลย
@@ -470,20 +470,20 @@ npm run start
 Environment variables ที่ควรตั้งในหน้า Environment / Secrets ของ Render:
 
 - `DATA_DIR = data`
+- `PYTHON_EXEC = python3`
 - `DEFAULT_ADMIN_EMAIL = asdrtsuparat2019@gmail.com`
 - `DEFAULT_ADMIN_PASSWORD = <set-a-strong-password>`
 - `JWT_SECRET` = ให้ Render generate หรือใส่ string ยาวสุ่ม
-- `OPEN_SOURCE_LLM_API_KEY` = (ใส่เมื่อพร้อมใช้ฟีเจอร์ AI)
-- `OPEN_SOURCE_LLM_BASE_URL = https://openrouter.ai/api/v1`
-- `OPEN_SOURCE_LLM_MODEL = meta-llama/llama-3.1-8b-instruct:free`
-- `OPENAI_API_KEY` = (ใส่เมื่อพร้อมใช้ OpenAI import PDF)
-- `OPENAI_BASE_URL = https://api.openai.com/v1`
-- `OPENAI_MODEL = gpt-4o-mini`
+- `HUGGINGFACE_API_KEY` = token ที่มีสิทธิ์ `Make calls to Inference Providers`
+- `TRANSFORMERS_MODEL = Qwen/Qwen2.5-1.5B-Instruct`
+- `TRANSFORMERS_MAX_NEW_TOKENS = 1400`
+- `TRANSFORMERS_TEMPERATURE = 0.95`
 
 ข้อควรระวังเพิ่มเติม:
 
 - แผนฟรีของ Render ให้ไฟล์ระบบเป็น ephemeral — ข้อมูลที่เขียนลง `data/` อาจหายเมื่อ service restart หรือ redeploy
 - หากต้องการข้อมูลคงทน ให้ใช้ persistent disk (ต้องเป็นแผนที่จ่ายเงิน) หรือตั้งค่าให้เก็บข้อมูลภายนอกเช่น PostgreSQL / S3
+- Python AI engine สำหรับ `transformers` ทำงานอยู่ใน service เดียวกับ Next.js ไม่ได้แยกเป็นอีก service หนึ่ง โดย Render จะติดตั้ง Python package ในขั้น build แล้ว route ของ Next.js จะเรียก `python3 ai_engine/question_generator.py` ใน runtime เดียวกัน
 
 ถ้าคุณล็อกอินและเชื่อม GitHub เรียบร้อย ผมช่วยแนะนำทีละหน้าจอจนเว็บขึ้นใช้งานได้ — แจ้งผมเมื่อพร้อมครับ
 

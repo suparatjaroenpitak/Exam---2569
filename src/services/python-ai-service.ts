@@ -7,9 +7,14 @@ import { getPythonCommand } from "@/lib/python-runtime";
 export async function generateWithPythonEngine(input: { category: string; subcategory: string; count: number; difficulty: string }) {
   const python = getPythonCommand();
   const script = path.join(process.cwd(), "ai_engine", "question_generator.py");
+  const bundledPythonPath = path.join(process.cwd(), ".render-python");
+  const resolvedPythonPath = process.env.PYTHONPATH
+    ? `${bundledPythonPath}${path.delimiter}${process.env.PYTHONPATH}`
+    : bundledPythonPath;
   const payload = JSON.stringify({ subject: input.category, topic: input.subcategory, count: input.count, difficulty: input.difficulty });
   const childEnv = {
     ...process.env,
+    PYTHONPATH: resolvedPythonPath,
     HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || env.huggingFaceApiKey,
     THAI_GENERATOR_MODEL: process.env.THAI_GENERATOR_MODEL || env.thaiGeneratorModel,
     TRANSFORMERS_MODEL: process.env.TRANSFORMERS_MODEL || env.transformersModel,
