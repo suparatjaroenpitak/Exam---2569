@@ -1,5 +1,21 @@
+import { aiExtractQuestionsFromText } from "@/services/wangchan-nlp-service";
+
 function normalizeLine(value: string) {
   return value.replace(/\r/g, "").trim();
+}
+
+// Normalize PDF raw text: whitespace, full-width conversion, remove common headers
+export function pdfParser(raw: string) {
+  if (!raw || typeof raw !== "string") return "";
+  // normalize unicode whitespace
+  let text = raw.replace(/\u3000/g, " ").replace(/[\u00A0\t]+/g, " ");
+  // normalize repeated spaces and newlines
+  text = text.replace(/\r/g, "\n").replace(/\n{2,}/g, "\n\n");
+  // remove simple page headers like 'Page X' or repeated doc title lines
+  text = text.split('\n').map((line) => line.replace(/^(Page|หน้า)\s*\d+/i, "").trim()).join('\n');
+  // strip control chars
+  text = text.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, "");
+  return text.trim();
 }
 
 export function splitPdfIntoQuestionCandidates(text: string) {
@@ -104,6 +120,41 @@ export function parseCandidate(candidate: string) {
     choices,
     correct_answer: correct
   };
+}
+
+// Extract questions from PDF text with parser first, then AI fallback.
+export async function extractQuestions(rawText: string) {
+  const normalized = pdfParser(rawText || "");
+  const candidates = splitPdfIntoQuestionCandidates(normalized);
+
+  const extracted: Array<{ question: string; choices: string[]; correct_answer?: string; raw: string }> = [];
+
+  for (const c of candidates) {
+    const parsed = parseCandidate(c);
+    if (parsed && parsed.question) {
+      extracted.push({ question: parsed.question, choices: parsed.choices, correct_answer: parsed.correct_answer || undefined, raw: parsed.raw });
+    }
+  }
+
+  // If parser found nothing or very few candidates, call AI extractor fallback
+  if (extracted.length === 0) {
+    try {
+      const aiRows = await aiExtractQuestionsFromText(normalized, { maxQuestions: 200 });
+      for (const r of aiRows) {
+        const choices = [r.choice_a, r.choice_b, r.choice_c, r.choice_d].filter(Boolean);
+        extracted.push({ question: r.question, choices, correct_answer: r.correct_answer || undefined, raw: r.question });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Ensure we never return empty result: if still empty, return a single REVIEW_REQUIRED block
+  if (extracted.length === 0 && normalized.trim().length > 20) {
+    return [{ question: normalized.slice(0, 500), choices: [], raw: normalized }];
+  }
+
+  return extracted;
 }
 
 import { EXAM_CATEGORIES, getDefaultSubcategory } from "./constants";

@@ -82,6 +82,8 @@ export type QuestionRecord = {
   explanation: string;
   source: QuestionSource;
   createdAt: string;
+  model_subcategory?: string;
+  status?: "REVIEW_REQUIRED" | "VALID";
 };
 
 export type QuestionChoice = {

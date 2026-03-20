@@ -27,11 +27,26 @@ export function NlpGeneratorForm() {
     setLoading(true);
 
     try {
-      const response = await apiRequest<{ message: string }>("/api/admin/generate-questions", {
-        method: "POST",
-        body: JSON.stringify({ category, subcategory, count, difficulty })
-      });
-      setMessage(translateApiMessage(locale, response.message));
+      let attempt = 0;
+      let final: any = null;
+      do {
+        final = await apiRequest<any>("/api/admin/generate-questions", {
+          method: "POST",
+          body: JSON.stringify({ category, subcategory, count, difficulty })
+        });
+        attempt++;
+        if (final && final.saved === 0 && final.generated > 0 && attempt === 1) {
+          setMessage("AI generation failed, retrying...");
+          // small delay before retrying
+          await new Promise((res) => setTimeout(res, 800));
+          continue;
+        }
+        break;
+      } while (attempt < 2);
+
+      if (final) {
+        setMessage(translateApiMessage(locale, final.message));
+      }
       router.refresh();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : translate("message.generation-failed"));

@@ -61,5 +61,267 @@
     "database_total_before": 1,
     "database_total_after": 21,
     "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:46:05.851Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 21,
+    "database_total_after": 21,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:46:23.248Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 21,
+    "database_total_after": 21,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:53:11.670Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 0,
+    "database_total_after": 20,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:53:18.968Z",
+    "questions_generated": 20,
+    "questions_saved": 18,
+    "database_total_before": 20,
+    "database_total_after": 38,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:56:54.373Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 0,
+    "database_total_after": 20,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T12:57:05.827Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 20,
+    "database_total_after": 40,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:01:33.999Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 0,
+    "database_total_after": 20,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:05:16.240Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 0,
+    "database_total_after": 20,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:05:34.162Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 20,
+    "database_total_after": 40,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:10:37.760Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:10:42.593Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:10:44.721Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:10:47.641Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:10:50.515Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:10:53.712Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:10:55.995Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:11:05.352Z",
+    "total_detected": 0,
+    "valid_questions": 0,
+    "rejected_questions": 0,
+    "reason": "no candidates"
+  },
+  {
+    "import_time": "2026-03-16T13:11:13.842Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:22:45.640Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:22:56.913Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T13:23:07.753Z",
+    "total_detected": 0,
+    "valid_questions": 0,
+    "rejected_questions": 0,
+    "reason": "no candidates"
+  },
+  {
+    "import_time": "2026-03-16T13:59:50.081Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T14:00:52.658Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T14:02:42.622Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T14:16:35.494Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T14:22:21.846Z",
+    "questions_generated": 0,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T14:34:47.223Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 0,
+    "database_total_after": 20,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T14:35:09.711Z",
+    "questions_generated": 20,
+    "questions_saved": 20,
+    "database_total_before": 20,
+    "database_total_after": 40,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T14:35:33.633Z",
+    "questions_generated": 17,
+    "questions_saved": 17,
+    "database_total_before": 40,
+    "database_total_after": 57,
+    "rejected_questions": 0
+  },
+  {
+    "import_time": "2026-03-16T15:06:09.054Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 17
+  },
+  {
+    "import_time": "2026-03-16T15:06:19.227Z",
+    "questions_generated": 16,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 16
+  },
+  {
+    "import_time": "2026-03-16T15:06:38.394Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 17
+  },
+  {
+    "import_time": "2026-03-16T15:06:48.665Z",
+    "questions_generated": 17,
+    "questions_saved": 0,
+    "database_total_before": 0,
+    "database_total_after": 0,
+    "rejected_questions": 17
   }
 ]

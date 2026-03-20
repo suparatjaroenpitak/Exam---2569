@@ -17,7 +17,7 @@ const bodyFont = IBM_Plex_Sans_Thai({
 
 export const metadata: Metadata = {
   title: "Online Exam Practice System",
-  description: "Practice Thai, English, Mathematics, and Thai Law exams with PDF import and Typhoon2 Thai AI question generation."
+  description: "Practice Thai, English, Mathematics, and Thai Law exams with PDF import and Mistral AI question generation."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

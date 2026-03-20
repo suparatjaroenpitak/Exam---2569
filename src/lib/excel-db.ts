@@ -1,5 +1,5 @@
 import { existsSync } from "fs";
-import { mkdir, writeFile, copyFile } from "fs/promises";
+import { mkdir, writeFile, copyFile, readFile } from "fs/promises";
 import path from "path";
 
 import * as XLSX from "xlsx";
@@ -8,6 +8,7 @@ import { EXCEL_SHEETS } from "@/lib/constants";
 import { env } from "@/lib/env";
 import { startBackupScheduler } from "@/lib/backup-scheduler";
 import type { ExamResultRow, QuestionRecord, UserRecord } from "@/lib/types";
+import { validateStrictQuestion, mapSubjectToStrict, mapStrictToFull } from "@/lib/question-validator";
 
 const DATA_DIR = path.isAbsolute(env.dataDir) ? env.dataDir : path.resolve(process.cwd(), env.dataDir);
 const questionsFilePath = path.join(DATA_DIR, "questions.xlsx");
@@ -20,6 +21,8 @@ const questionHeaders: Array<keyof QuestionRecord> = [
   "subject",
   "category",
   "subcategory",
+  "model_subcategory",
+  "status",
   "difficulty",
   "question",
   "choice_a",
@@ -170,7 +173,6 @@ export async function saveQuestions(rows: QuestionRecord[]) {
   await writeRows<QuestionRecord>(questionsFilePath, EXCEL_SHEETS.questions, rows, questionHeaders);
 }
 
-import { validateStrictQuestion, mapSubjectToStrict } from "@/lib/question-validator";
 export async function appendQuestions(rows: QuestionRecord[]) {
   const existing = await loadQuestions();
 
@@ -227,37 +229,91 @@ export async function appendQuestions(rows: QuestionRecord[]) {
         source: strict.source,
         created_at: strict.created_at
       });
-
-      if (!v.valid) {
-        rejected.push({ row: r, reason: String(v.reason || "validation failed") });
-        continue;
-      }
+      // Determine minimal validity: question length > 15 and at least 3 choices
+      const choicesCount = [strict.choice_a, strict.choice_b, strict.choice_c, strict.choice_d].filter(Boolean).length;
 
       // Store the human-readable category/subject names for UI compatibility
       const subjectFull = mapStrictToFull(strict.subject as string);
-      toAppend.push({
-        id: strict.id,
-        subject: subjectFull,
-        category: subjectFull,
-        subcategory: strict.subcategory,
-        difficulty: strict.difficulty,
-        question: strict.question,
-        choice_a: strict.choice_a,
-        choice_b: strict.choice_b,
-        choice_c: strict.choice_c,
-        choice_d: strict.choice_d,
-        correct_answer: strict.correct_answer,
-        explanation: strict.explanation,
-        source: strict.source,
-        createdAt: strict.createdAt,
-        created_at: strict.created_at
-      });
+
+      if (v.valid) {
+        const forceReview = (r as any).__needsReview === true;
+        toAppend.push({
+          id: strict.id,
+          subject: subjectFull,
+          category: subjectFull,
+          subcategory: strict.subcategory,
+          model_subcategory: String(r.model_subcategory || "").trim(),
+          status: forceReview ? "REVIEW_REQUIRED" : "VALID",
+          difficulty: strict.difficulty,
+          question: strict.question,
+          choice_a: strict.choice_a,
+          choice_b: strict.choice_b,
+          choice_c: strict.choice_c,
+          choice_d: strict.choice_d,
+          correct_answer: strict.correct_answer,
+          explanation: strict.explanation,
+          source: strict.source,
+          createdAt: strict.createdAt,
+          created_at: strict.created_at
+        });
+      } else if (strict.question && strict.question.length > 15 && choicesCount >= 3) {
+        // Minimal valid: store for admin review instead of rejecting
+        const safeCorrect = /^[A-D]$/.test(String(strict.correct_answer || "")) ? strict.correct_answer : "A";
+        toAppend.push({
+          id: strict.id,
+          subject: subjectFull,
+          category: subjectFull,
+          subcategory: strict.subcategory,
+          model_subcategory: String(r.model_subcategory || "").trim(),
+          status: "REVIEW_REQUIRED",
+          difficulty: strict.difficulty,
+          question: strict.question,
+          choice_a: strict.choice_a || "",
+          choice_b: strict.choice_b || "",
+          choice_c: strict.choice_c || "",
+          choice_d: strict.choice_d || "",
+          correct_answer: safeCorrect as any,
+          explanation: strict.explanation,
+          source: strict.source,
+          createdAt: strict.createdAt,
+          created_at: strict.created_at
+        });
+      } else {
+        rejected.push({ row: r, reason: String(v.reason || "validation failed") });
+        continue;
+      }
 
       existingIds.add(id);
       existingTexts.add(textKey);
     } catch (err) {
       rejected.push({ row: r, reason: String(err) });
     }
+  }
+  // Debug: append a small diagnostic entry so we can inspect why appends result in 0 saved
+  try {
+    const debugPath = path.join(DATA_DIR, "append_debug.json");
+    let debugLogs: any[] = [];
+    try {
+      if (existsSync(debugPath)) {
+        const raw = await readFile(debugPath, "utf8");
+        debugLogs = JSON.parse(raw || "[]");
+      }
+    } catch (e) {
+      debugLogs = [];
+    }
+
+    debugLogs.push({
+      ts: new Date().toISOString(),
+      incoming: rows.length,
+      existing: existing.length,
+      toAppend: toAppend.length,
+      rejectedCount: rejected.length,
+      rejectedSample: rejected.slice(0, 5)
+    });
+
+    await writeFile(debugPath, JSON.stringify(debugLogs.slice(-200), null, 2), "utf8");
+  } catch (e) {
+    // non-fatal
   }
 
   if (toAppend.length > 0) {

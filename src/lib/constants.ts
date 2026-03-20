@@ -99,11 +99,19 @@ const SUBJECT_ALIASES: Record<string, ExamSubject> = {
   "Thai Language": "Thai Language",
   "Analytical Thinking": "Analytical Thinking",
   "English Language": "English Language",
-  "Government Law & Ethics": "Government Law & Ethics"
+  "Government Law & Ethics": "Government Law & Ethics",
+  // short codes produced by the import/generation pipeline
+  math: "Analytical Thinking",
+  thai: "Thai Language",
+  english: "English Language",
+  law: "Government Law & Ethics"
 };
 
 export function normalizeSubject(value: string): ExamSubject | null {
-  return SUBJECT_ALIASES[value.trim()] ?? null;
+  if (!value) return null;
+  const key = value.trim();
+  // try exact match first, then lowercase match
+  return SUBJECT_ALIASES[key] ?? SUBJECT_ALIASES[key.toLowerCase()] ?? null;
 }
 
 export function getSubjectSubcategories(subject: ExamSubject) {

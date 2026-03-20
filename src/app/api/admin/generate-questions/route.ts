@@ -28,7 +28,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid subcategory for selected subject" }, { status: 400 });
     }
     const result = await generateAndSave({ ...payload, subcategory: payload.subcategory as ExamSubcategory });
-    return NextResponse.json({ message: `Generated ${result.generated}, saved ${result.saved}, rejected ${result.rejected}`, totalQuestions: result.totalAfter });
+    const message = result.fallbackUsed
+      ? `Using fallback questions; saved ${result.saved}, rejected ${result.rejected}`
+      : `Generated ${result.generated}, saved ${result.saved}, rejected ${result.rejected}`;
+
+    return NextResponse.json({
+      message,
+      generated: result.generated,
+      saved: result.saved,
+      rejected: result.rejected,
+      totalQuestions: result.totalAfter,
+      fallbackUsed: Boolean(result.fallbackUsed)
+    });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "NLP generation failed" },

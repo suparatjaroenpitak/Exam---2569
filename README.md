@@ -1,6 +1,6 @@
 # ระบบฝึกทำข้อสอบออนไลน์
 
-โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และด้วยโมเดลภาษาไทยเชิงกำเนิด `typhoon-ai/llama3.1-typhoon2-8b-instruct`
+โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และด้วยโมเดลภาษาไทยเชิงกำเนิด `mistralai/mistral-7b-v0.1`
 
 ## ความสามารถหลัก
 
@@ -134,7 +134,7 @@ DATA_DIR=data
 JWT_SECRET=replace-with-a-long-random-secret
 HUGGINGFACE_API_KEY=
 THAI_GENERATOR_BASE_URL=https://api-inference.huggingface.co/models
-THAI_GENERATOR_MODEL=typhoon-ai/llama3.1-typhoon2-8b-instruct
+THAI_GENERATOR_MODEL=mistralai/mistral-7b-v0.1
 DEFAULT_ADMIN_EMAIL=admin@example.com
 DEFAULT_ADMIN_PASSWORD=Admin12345!
 ```
@@ -143,9 +143,23 @@ DEFAULT_ADMIN_PASSWORD=Admin12345!
 
 ระบบใช้ 2 ส่วนแยกกันชัดเจน:
 
-- การสร้างข้อสอบจากหน้า admin ใช้โมเดลภาษาไทยเชิงกำเนิด `typhoon-ai/llama3.1-typhoon2-8b-instruct` ผ่าน Hugging Face Inference API
+- การสร้างข้อสอบจากหน้า admin ใช้โมเดลภาษาไทยเชิงกำเนิด `mistralai/mistral-7b-v0.1` ผ่าน Hugging Face Inference API
 - การนำเข้า PDF และการจัดหมวด/ตรวจสอบข้อสอบยังใช้ตัวแยกและกฎ Thai NLP ภายในแอป
 - ถ้าเรียกโมเดลไม่สำเร็จ ระบบจะ fallback ไปใช้ template generator เพื่อไม่ให้หน้า admin พัง
+
+### Fallback: Mistral AI
+
+เริ่มจากเวอร์ชันนี้ โมเดลหลักสำหรับการสร้างข้อสอบจะเป็น `Mistral` (ค่าใน `THAI_GENERATOR_MODEL`) — ถ้าโมเดลหลักไม่สามารถสร้างข้อสอบที่เป็น JSON หรือให้ผลลัพธ์เพียงพอ ระบบจะลองเรียกโมเดลสำรอง (ถ้ามีการกำหนด) หรือใช้ template generator เป็น fallback เพื่อไม่ให้หน้า admin ว่างเปล่า
+
+ตั้งค่าที่เกี่ยวข้อง (ใน `.env.local`):
+
+```env
+MISTRAL_BASE_URL=https://api-inference.huggingface.co/models
+MISTRAL_MODEL=mistralai/mistral-7b-v0.1
+# (Hugging Face API key ใช้ตัวเดียวกับ HUGGINGFACE_API_KEY)
+```
+
+การตั้งค่านี้เป็น optional — ถ้าไม่ตั้งไว้ ระบบจะยังทำงานเหมือนเดิม (จะพยายามจากโมเดลหลัก แล้วลงไปที่ template fallback)
 
 หมายเหตุ: ตัวโมเดลเป็น open-weight และใช้ฟรีในเชิงโมเดล แต่การเรียกผ่าน Hugging Face hosted inference โดยทั่วไปควรใช้ `HUGGINGFACE_API_KEY` ของบัญชี Hugging Face เพื่อให้เรียกใช้งานได้เสถียร
 
@@ -384,6 +398,30 @@ https://exam-2569.onrender.com/
 ## Deploy บน Render
 
 โปรเจกต์นี้ build ผ่านบน Next.js production mode และสามารถ deploy เป็น Node web service บน Render ได้
+
+## AI Engine (ใหม่)
+
+Project now includes a local Python-based AI Engine to generate and validate questions without depending on external LLM APIs. The engine lives in `ai_engine/` and provides:
+
+- `question_generator.py` — generate multiple question templates per topic (uses strict topic tokens for validation)
+- `question_validator.py` — validate choices, detect duplicate choices and basic formatting
+- `duplicate_detector.py` — cosine-similarity based duplicate detection
+- `topic_classifier.py` — strict topic checks (rejects outputs that do not contain required tokens such as "%" or "ร้อยละ" for topic `ร้อยละ`)
+
+Node code calls the Python engine via `src/services/python-ai-service.ts` which spawns the Python script and normalizes results into the existing pipeline.
+
+### API
+
+- `POST /api/admin/generate-questions` — request payload: `{ category, subcategory, count, difficulty }`. The server first attempts generation via the local Python engine, then falls back to existing model/template flows. The API will never return empty: if generation cannot produce enough items, it uses template fallback.
+
+### Logs
+
+- Generation activity is appended to `logs/generation_log.json` for auditing (timestamp, generated, rejected, saved, fallbackUsed).
+
+### Tests
+
+Add Python unit tests under `ai_engine/tests/` (pytest) to validate topic classification, duplicate detection and generation stability.
+
 
 ข้อจำกัดสำคัญ:
 

@@ -1,0 +1,117 @@
+[
+  {
+    "ts": "2026-03-16T12:53:11.676Z",
+    "incoming": 20,
+    "existing": 0,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T12:53:18.975Z",
+    "incoming": 20,
+    "existing": 20,
+    "toAppend": 18,
+    "rejectedCount": 2,
+    "rejectedSample": [
+      {
+        "row": {
+          "subject": "Analytical Thinking",
+          "category": "Analytical Thinking",
+          "subcategory": "Percentage",
+          "question": "หาก 7 - x = -5, ค่า x เท่ากับเท่าใด?",
+          "choice_a": "11",
+          "choice_b": "14",
+          "choice_c": "13",
+          "choice_d": "-12",
+          "correct_answer": "D",
+          "explanation": "แก้สมการให้ได้ค่า x = -12",
+          "difficulty": "medium",
+          "source": "llm"
+        },
+        "reason": "duplicate question text"
+      },
+      {
+        "row": {
+          "subject": "Analytical Thinking",
+          "category": "Analytical Thinking",
+          "subcategory": "Percentage",
+          "question": "หาก 6 - x = -8, ค่า x เท่ากับเท่าใด?",
+          "choice_a": "15",
+          "choice_b": "16",
+          "choice_c": "13",
+          "choice_d": "-14",
+          "correct_answer": "D",
+          "explanation": "แก้สมการให้ได้ค่า x = -14",
+          "difficulty": "medium",
+          "source": "llm"
+        },
+        "reason": "duplicate question text"
+      }
+    ]
+  },
+  {
+    "ts": "2026-03-16T12:56:54.378Z",
+    "incoming": 20,
+    "existing": 0,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T12:57:05.834Z",
+    "incoming": 20,
+    "existing": 20,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T13:01:34.008Z",
+    "incoming": 20,
+    "existing": 0,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T13:05:16.252Z",
+    "incoming": 20,
+    "existing": 0,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T13:05:34.170Z",
+    "incoming": 20,
+    "existing": 20,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T14:34:47.231Z",
+    "incoming": 20,
+    "existing": 0,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T14:35:09.721Z",
+    "incoming": 20,
+    "existing": 20,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-16T14:35:33.646Z",
+    "incoming": 17,
+    "existing": 40,
+    "toAppend": 17,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  }
+]

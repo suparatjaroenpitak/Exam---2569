@@ -11,6 +11,45 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
   const { locale, translate } = usePreferences();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<ExamCategory | "all">("all");
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function selectAllFiltered() {
+    const next: Record<string, boolean> = {};
+    for (const id of allFilteredIds) next[id] = true;
+    setSelected(next);
+  }
+
+  function clearSelection() {
+    setSelected({});
+  }
+
+  async function deleteSelected() {
+    const ids = Object.keys(selected).filter((id) => selected[id]);
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} selected questions?`)) return;
+    try {
+      await fetch("/api/admin/questions", { method: "DELETE", body: JSON.stringify({ ids }), headers: { "Content-Type": "application/json" } });
+      // refresh the page data
+      location.reload();
+    } catch (e) {
+      alert("Delete failed: " + String(e));
+    }
+  }
+
+  async function clearAll() {
+    if (!confirm("Delete ALL questions? This cannot be undone.")) return;
+    try {
+      await fetch("/api/admin/questions", { method: "DELETE", body: JSON.stringify({ action: "clear" }), headers: { "Content-Type": "application/json" } });
+      location.reload();
+    } catch (e) {
+      alert("Clear failed: " + String(e));
+    }
+  }
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -38,6 +77,8 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
         .includes(normalizedQuery);
     });
   }, [category, query, questions]);
+
+  const allFilteredIds = useMemo(() => filtered.map((q) => q.id), [filtered]);
 
   return (
     <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
@@ -70,14 +111,35 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
       </div>
 
       <div className="mt-6 space-y-4">
+        <div className="flex items-center justify-end gap-2">
+          <button type="button" onClick={selectAllFiltered} className="rounded px-3 py-2 text-sm bg-slate-100">Select all</button>
+          <button type="button" onClick={clearSelection} className="rounded px-3 py-2 text-sm bg-slate-50">Clear selection</button>
+          <button type="button" onClick={deleteSelected} className="rounded px-3 py-2 text-sm bg-rose-500 text-white">Delete selected</button>
+          <button type="button" onClick={clearAll} className="rounded px-3 py-2 text-sm bg-red-700 text-white">Clear all</button>
+        </div>
         {filtered.map((question, index) => (
           <article key={question.id} className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+            <div className="mb-2">
+              <input type="checkbox" checked={!!selected[question.id]} onChange={() => toggleSelect(question.id)} />
+            </div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em]">
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-300">{translate("exam.question")} {index + 1}</span>
               <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">{getCategoryLabel(locale, question.subject)}</span>
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">{getSubcategoryLabel(locale, question.subcategory)}</span>
+              {question.model_subcategory ? (
+                <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-800">{question.model_subcategory}</span>
+              ) : null}
               <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-800">{getDifficultyLabel(locale, question.difficulty)}</span>
               <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-800">{question.source}</span>
+              {(["python","llm","nlp"].includes(String(question.source)) || question.source?.toLowerCase?.() === "python") ? (
+                <span className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-800">AI Generated</span>
+              ) : null}
+              {question.model_subcategory ? (
+                <span className="rounded-full bg-lime-50 px-3 py-1 text-lime-800">Topic Verified</span>
+              ) : null}
+              {typeof (question as any).quality_score === "number" && (question as any).quality_score >= 70 ? (
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">Quality Checked</span>
+              ) : null}
             </div>
             <h4 className="mt-4 text-lg font-semibold text-slate-950 dark:text-slate-100">{question.question}</h4>
             <div className="mt-4 grid gap-2 md:grid-cols-2">

@@ -2,8 +2,9 @@ import { SUBJECT_SUBCATEGORIES, getDefaultSubcategory, isSupportedSubcategory } 
 import { env } from "@/lib/env";
 import { classifyByKeywords, estimateDifficulty, parseCandidate, splitPdfIntoQuestionCandidates } from "@/lib/pdf-question-parser";
 import type { AnswerKey, ExamCategory, ExamSubcategory, QuestionDifficulty, QuestionRecord } from "@/lib/types";
+import { generateWithPythonEngine } from "@/services/python-ai-service";
 
-const THAI_GENERATOR_NAME = "Typhoon2 Thai LLM";
+const THAI_GENERATOR_NAME = "Mistral AI";
 
 const SUBCATEGORY_HINTS: Partial<Record<ExamSubcategory, string[]>> = {
   Percentage: ["ร้อยละ", "เปอร์เซ็นต์", "percent", "%"],
@@ -69,7 +70,6 @@ function normalizeSubcategory(subject: ExamCategory, subcategory: string | null 
 function normalizeText(value: unknown) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
-
 function buildRowFingerprint(row: Pick<QuestionRecord, "question" | "choice_a" | "choice_b" | "choice_c" | "choice_d" | "correct_answer">) {
   const question = normalizeText(row.question).toLowerCase();
   const choices = [row.choice_a, row.choice_b, row.choice_c, row.choice_d].map((choice) => normalizeText(choice).toLowerCase());
@@ -295,10 +295,76 @@ async function callThaiGenerativeModel(input: {
   throw new Error("Thai generative model returned an unsupported response shape");
 }
 
+async function callMistralModel(input: {
+  category: ExamCategory;
+  subcategory: ExamSubcategory;
+  count: number;
+  difficulty: QuestionDifficulty;
+}) {
+  const prompt = buildGenerationPrompt(input);
+  const url = `${env.mistralBaseUrl.replace(/\/$/, "")}/${env.mistralModel}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(env.huggingFaceApiKey ? { Authorization: `Bearer ${env.huggingFaceApiKey}` } : {})
+    },
+    body: JSON.stringify({
+      inputs: prompt,
+      parameters: {
+        return_full_text: false,
+        do_sample: true,
+        temperature: 0.9,
+        top_p: 0.95,
+        max_new_tokens: Math.max(900, input.count * 220)
+      },
+      options: { wait_for_model: true }
+    })
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    const message = typeof payload?.error === "string"
+      ? payload.error
+      : payload?.error?.message || payload?.message || `Mistral model request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  if (Array.isArray(payload) && typeof payload[0]?.generated_text === "string") {
+    return payload[0].generated_text as string;
+  }
+
+  if (typeof payload?.generated_text === "string") {
+    return payload.generated_text as string;
+  }
+
+  throw new Error("Mistral generative model returned an unsupported response shape");
+}
+
+async function generateQuestionsWithMistralModel(input: {
+  category: ExamCategory;
+  subcategory: ExamSubcategory;
+  count: number;
+  difficulty: QuestionDifficulty;
+}) {
+  try {
+    const generatedText = await callMistralModel(input);
+    try {
+      const jsonPayload = extractJsonPayload(generatedText);
+      return normalizeGeneratedRows(input, JSON.parse(jsonPayload)).slice(0, input.count);
+    } catch (_) {
+      return [];
+    }
+  } catch (_) {
+    return [];
+  }
+}
+
 function normalizeGeneratedRows(
   input: { category: ExamCategory; subcategory: ExamSubcategory; difficulty: QuestionDifficulty },
   rawRows: unknown
-): Array<Omit<QuestionRecord, "id" | "createdAt">> {
+): any[] {
   const rowsArray = Array.isArray(rawRows)
     ? rawRows
     : rawRows && typeof rawRows === "object" && Array.isArray((rawRows as { questions?: unknown[] }).questions)
@@ -334,14 +400,51 @@ function normalizeGeneratedRows(
     }
 
     const correctAnswer = resolveCorrectAnswerKey(record.correct_answer, choices);
-    const subcategory = isSupportedSubcategory(input.category, input.subcategory)
-      ? input.subcategory
-      : inferSubcategory(input.category, `${question}\n${choices.join("\n")}`);
+    const inferred = inferSubcategory(input.category, `${question}\n${choices.join("\n")}`);
+
+    // Prefer explicit subcategory returned by the model when available and valid.
+    const recordSubRaw = normalizeText(record.subcategory || record.category || "");
+    const recordSub = recordSubRaw && isSupportedSubcategory(input.category, recordSubRaw) ? recordSubRaw : null;
+
+    // Determine candidate subcategory: prefer explicit model-provided, otherwise inference
+    let subcategoryCandidate: string | null = null;
+    if (recordSub) {
+      subcategoryCandidate = recordSub;
+    } else {
+      subcategoryCandidate = inferred;
+    }
+
+    // If a specific subcategory was requested, enforce it strictly: candidate must equal requested
+    if (isSupportedSubcategory(input.category, input.subcategory) && subcategoryCandidate !== input.subcategory) {
+        // Log rejected candidate for diagnostics so we can analyze model failures
+        try {
+          const debugPath = (globalThis?.process && globalThis.process.cwd)
+            ? require("path").join(globalThis.process.cwd(), "data", "generation_debug.json")
+            : null;
+          if (debugPath) {
+            const fs = require("fs");
+            let logs = [];
+            try {
+              if (fs.existsSync(debugPath)) logs = JSON.parse(fs.readFileSync(debugPath, "utf8") || "[]");
+            } catch (e) {
+              logs = [];
+            }
+            logs.push({ ts: new Date().toISOString(), requested: input.subcategory, model_subcategory: recordSub, inferred, question, choices, reason: "subcategory-mismatch" });
+            try { fs.writeFileSync(debugPath, JSON.stringify(logs.slice(-500), null, 2), "utf8"); } catch (e) {}
+          }
+        } catch (e) {
+          // ignore logging failures
+        }
+        return [];
+      }
+
+      const subcategory = subcategoryCandidate as ExamSubcategory;
 
     const normalizedRow = {
       subject: input.category,
       category: input.category,
       subcategory,
+      model_subcategory: recordSub || "",
       difficulty: input.difficulty,
       question,
       choice_a: choices[0],
@@ -370,9 +473,36 @@ async function generateQuestionsWithThaiModel(input: {
   count: number;
   difficulty: QuestionDifficulty;
 }) {
-  const generatedText = await callThaiGenerativeModel(input);
-  const jsonPayload = extractJsonPayload(generatedText);
-  return normalizeGeneratedRows(input, JSON.parse(jsonPayload)).slice(0, input.count);
+  // Call the Thai model and attempt to extract JSON. If parsing fails or the
+  // model call errors, return an empty array so the caller can retry.
+  try {
+    const generatedText = await callThaiGenerativeModel(input);
+    try {
+      const jsonPayload = extractJsonPayload(generatedText);
+      return normalizeGeneratedRows(input, JSON.parse(jsonPayload)).slice(0, input.count);
+    } catch (parseErr) {
+      // Save raw output for debugging and return empty so caller can retry.
+      try {
+        const debugPath = (globalThis?.process && globalThis.process.cwd)
+          ? require("path").join(globalThis.process.cwd(), "data", "generation_debug.json")
+          : null;
+        if (debugPath) {
+          const fs = require("fs");
+          let logs: any[] = [];
+          try {
+            if (fs.existsSync(debugPath)) logs = JSON.parse(fs.readFileSync(debugPath, "utf8") || "[]");
+          } catch (_) { logs = []; }
+          logs.push({ ts: new Date().toISOString(), requested: input.subcategory, error: String(parseErr), raw: generatedText });
+          try { fs.writeFileSync(debugPath, JSON.stringify(logs.slice(-1000), null, 2), "utf8"); } catch (_) {}
+        }
+      } catch (_) {
+        // ignore logging failures
+      }
+      return [];
+    }
+  } catch (_) {
+    return [];
+  }
 }
 
 export async function classifyQuestion(questionText: string): Promise<{ subject: ExamCategory; subcategory: ExamSubcategory }> {
@@ -430,6 +560,7 @@ export async function generateQuestionsWithWangchanNlp(input: {
   subcategory: ExamSubcategory;
   count: number;
   difficulty: QuestionDifficulty;
+  allowTemplateFallback?: boolean;
 }): Promise<Array<Omit<QuestionRecord, "id" | "createdAt">>> {
   const collected: Array<Omit<QuestionRecord, "id" | "createdAt">> = [];
   const seenFingerprints = new Set<string>();
@@ -453,13 +584,32 @@ export async function generateQuestionsWithWangchanNlp(input: {
     }
   };
 
-  try {
-    appendUnique(await generateQuestionsWithThaiModel(input));
-  } catch {
-    // Fall back to template generation if hosted inference is unavailable or malformed.
+  // Try multiple model attempts to get enough items in the requested subcategory.
+  const maxModelAttempts = 5;
+  for (let attempt = 0; attempt < maxModelAttempts && collected.length < input.count; attempt++) {
+    try {
+      const rows = await generateQuestionsWithThaiModel(input);
+      appendUnique(rows);
+    } catch (e) {
+      // If model call fails or parsing failed, continue to next attempt so we can retry
+      continue;
+    }
   }
 
+  // If still short, try Mistral AI as a secondary fallback (if configured).
   if (collected.length < input.count) {
+    for (let attempt = 0; attempt < maxModelAttempts && collected.length < input.count; attempt++) {
+      try {
+        const rows = await generateQuestionsWithMistralModel(input);
+        appendUnique(rows);
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+
+  // If still short, optionally fall back to local templates.
+  if ((input.allowTemplateFallback ?? true) && collected.length < input.count) {
     appendUnique(await generateQuestionsWithTemplates({
       ...input,
       count: input.count - collected.length
@@ -467,6 +617,70 @@ export async function generateQuestionsWithWangchanNlp(input: {
   }
 
   return collected;
+}
+
+// AI extraction fallback: given raw PDF text, ask Mistral to extract MCQs as JSON.
+export async function aiExtractQuestionsFromText(rawText: string, options?: { maxQuestions?: number }) {
+  const count = options?.maxQuestions ?? 50;
+  const prompt = [
+    "You are an expert Thai exam parser. Extract multiple-choice questions from the following Thai exam text.",
+    "Return JSON only. The output must be an array of objects with fields: question, choice_a, choice_b, choice_c, choice_d (if available), correct_answer (A/B/C/D optional), subcategory (optional).",
+    "If choices are fewer than 4, include the choices you can detect. Do not invent choices.",
+    "If you cannot extract questions, return an empty array.",
+    "Text:",
+    rawText
+  ].join("\n\n");
+
+  // reuse callThaiGenerativeModel by wrapping the prompt
+  // callThaiGenerativeModel expects category/subcategory inputs; instead call the raw endpoint directly
+  const url = `${env.thaiGeneratorBaseUrl.replace(/\/$/, "")}/${env.thaiGeneratorModel}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(env.huggingFaceApiKey ? { Authorization: `Bearer ${env.huggingFaceApiKey}` } : {})
+    },
+    body: JSON.stringify({
+      inputs: prompt,
+      parameters: {
+        return_full_text: false,
+        do_sample: true,
+        temperature: 0.7,
+        top_p: 0.9,
+        max_new_tokens: Math.max(600, count * 150)
+      },
+      options: { wait_for_model: true }
+    })
+  });
+
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload?.error || payload?.message || `Model error ${response.status}`);
+  const raw = Array.isArray(payload) && payload[0]?.generated_text ? payload[0].generated_text : payload.generated_text;
+  if (!raw || typeof raw !== "string") return [];
+
+  // extract JSON
+  try {
+    const json = JSON.parse(extractJsonPayload(raw));
+    if (!Array.isArray(json)) return [];
+    // normalize items
+    return json.map((item: any) => ({
+      subject: "Analytical Thinking" as any,
+      category: "Analytical Thinking" as any,
+      subcategory: item.subcategory || "",
+      difficulty: "medium" as QuestionDifficulty,
+      question: String(item.question || "").trim(),
+      choice_a: String(item.choice_a || "").trim(),
+      choice_b: String(item.choice_b || "").trim(),
+      choice_c: String(item.choice_c || "").trim(),
+      choice_d: String(item.choice_d || "").trim(),
+      correct_answer: String(item.correct_answer || "").toUpperCase() as any,
+      explanation: String(item.explanation || "").trim(),
+      source: "nlp" as const,
+      model_subcategory: item.subcategory || ""
+    }));
+  } catch (e) {
+    return [];
+  }
 }
 
 export function getSupportedSubcategories(subject: ExamCategory) {

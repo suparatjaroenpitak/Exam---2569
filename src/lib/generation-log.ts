@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 const DATA_DIR = path.isAbsolute(env.dataDir) ? env.dataDir : path.resolve(process.cwd(), env.dataDir);
 const generationLogPath = path.join(DATA_DIR, "generation_logs.xlsx");
 
-const generationLogHeaders = ["timestamp", "generated", "valid", "saved", "failed"];
+const generationLogHeaders = ["timestamp", "generated", "valid", "saved", "failed", "fallbackUsed"];
 
 async function ensureDir() {
   await mkdir(DATA_DIR, { recursive: true });
@@ -40,9 +40,9 @@ async function writeLogs(rows: any[]) {
   await writeFile(generationLogPath, buffer);
 }
 
-export async function appendGenerationLog(entry: { timestamp: string; generated: number; valid: number; saved: number; failed: number }) {
+export async function appendGenerationLog(entry: { timestamp: string; generated: number; valid: number; saved: number; failed: number; fallbackUsed?: boolean }) {
   const existing = await readLogs();
-  existing.push(entry);
+  existing.push({ ...entry, fallbackUsed: Boolean(entry.fallbackUsed) });
   await writeLogs(existing);
 }
 
