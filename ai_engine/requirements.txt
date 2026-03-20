@@ -1,1 +1,2 @@
 pytest
+transformers>=4.49,<5

@@ -1,37 +1,60 @@
 import { spawnSync } from "child_process";
 import path from "path";
 
+import { env } from "@/lib/env";
+import { getPythonCommand } from "@/lib/python-runtime";
+
 export async function generateWithPythonEngine(input: { category: string; subcategory: string; count: number; difficulty: string }) {
-  const py = process.env.PYTHON_EXEC || "python";
+  const python = getPythonCommand();
   const script = path.join(process.cwd(), "ai_engine", "question_generator.py");
   const payload = JSON.stringify({ subject: input.category, topic: input.subcategory, count: input.count, difficulty: input.difficulty });
+  const childEnv = {
+    ...process.env,
+    HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || env.huggingFaceApiKey,
+    THAI_GENERATOR_MODEL: process.env.THAI_GENERATOR_MODEL || env.thaiGeneratorModel,
+    TRANSFORMERS_MODEL: process.env.TRANSFORMERS_MODEL || env.transformersModel,
+    TRANSFORMERS_MAX_NEW_TOKENS: process.env.TRANSFORMERS_MAX_NEW_TOKENS || env.transformersMaxNewTokens,
+    TRANSFORMERS_TEMPERATURE: process.env.TRANSFORMERS_TEMPERATURE || env.transformersTemperature,
+    THAI_GENERATOR_BASE_URL: process.env.THAI_GENERATOR_BASE_URL || env.thaiGeneratorBaseUrl
+  };
 
-  try {
-    const res = spawnSync(py, [script], { input: payload, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
-    if (res.error) throw res.error;
-    if (res.status !== 0 && res.stderr) {
-      throw new Error(res.stderr.toString());
-    }
-    const out = res.stdout ? res.stdout.toString() : "";
-    if (!out) return [];
-    const parsed = JSON.parse(out);
-    if (!Array.isArray(parsed)) return [];
-    // normalize minimal shape
-    return parsed.map((r: any) => ({
-      subject: r.subject || input.category,
-      category: r.subject || input.category,
-      subcategory: r.topic || input.subcategory,
-      question: r.question,
-      choice_a: r.choice_a,
-      choice_b: r.choice_b,
-      choice_c: r.choice_c,
-      choice_d: r.choice_d,
-      correct_answer: (r.correct_answer || "A").toUpperCase(),
-      explanation: r.explanation || "",
-      difficulty: r.difficulty || input.difficulty,
-      source: "python"
-    }));
-  } catch (e) {
+  const res = spawnSync(python.command, [...python.args, script], {
+    input: payload,
+    encoding: "utf8",
+    maxBuffer: 10 * 1024 * 1024,
+    env: childEnv
+  });
+
+  if (res.error) {
+    throw res.error;
+  }
+
+  const stdout = res.stdout ? res.stdout.toString().trim() : "";
+  const stderr = res.stderr ? res.stderr.toString().trim() : "";
+
+  if (res.status !== 0) {
+    throw new Error(stderr || stdout || `Python generator exited with status ${res.status}`);
+  }
+
+  if (!stdout) {
     return [];
   }
+
+  const parsed = JSON.parse(stdout);
+  if (!Array.isArray(parsed)) return [];
+  // normalize minimal shape
+  return parsed.map((r: any) => ({
+    subject: r.subject || input.category,
+    category: r.subject || input.category,
+    subcategory: r.topic || input.subcategory,
+    question: r.question,
+    choice_a: r.choice_a,
+    choice_b: r.choice_b,
+    choice_c: r.choice_c,
+    choice_d: r.choice_d,
+    correct_answer: (r.correct_answer || "A").toUpperCase(),
+    explanation: r.explanation || "",
+    difficulty: r.difficulty || input.difficulty,
+    source: "nlp"
+  }));
 }

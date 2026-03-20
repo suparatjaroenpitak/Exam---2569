@@ -113,5 +113,37 @@
     "toAppend": 17,
     "rejectedCount": 0,
     "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-20T06:19:32.411Z",
+    "incoming": 17,
+    "existing": 0,
+    "toAppend": 17,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-20T06:26:27.743Z",
+    "incoming": 20,
+    "existing": 0,
+    "toAppend": 20,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-20T06:27:23.979Z",
+    "incoming": 6,
+    "existing": 20,
+    "toAppend": 6,
+    "rejectedCount": 0,
+    "rejectedSample": []
+  },
+  {
+    "ts": "2026-03-20T07:08:31.569Z",
+    "incoming": 8,
+    "existing": 0,
+    "toAppend": 8,
+    "rejectedCount": 0,
+    "rejectedSample": []
   }
 ]

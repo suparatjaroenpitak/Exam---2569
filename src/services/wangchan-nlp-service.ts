@@ -158,12 +158,53 @@ function createLawQuestion(input: {
 }) {
   const acts = [...SUBJECT_SUBCATEGORIES["Government Law & Ethics"]];
   const concept = pickOne(LAW_CONCEPTS[input.subcategory]);
+  const otherConcepts = shuffle(
+    acts
+      .filter((act) => act !== input.subcategory)
+      .flatMap((act) => LAW_CONCEPTS[act as keyof typeof LAW_CONCEPTS].map((item) => item.clue))
+  );
+  const ownConcepts = LAW_CONCEPTS[input.subcategory].map((item) => item.clue).filter((item) => item !== concept.clue);
+  const mode = pickOne(["identify-act", "identify-concept", "except-concept"] as const);
+
+  if (mode === "identify-concept") {
+    const question = pickOne([
+      `ตาม ${input.subcategory} ข้อใดเป็นสาระสำคัญที่สอดคล้องกับกฎหมายฉบับนี้มากที่สุด?`,
+      `หากข้อสอบอยู่ในหัวข้อ ${input.subcategory} ข้อใดควรเป็นคำตอบที่ถูกต้องที่สุด?`,
+      `สาระใดต่อไปนี้อยู่ในขอบเขตของ ${input.subcategory} โดยตรง?`
+    ]);
+    const correct = concept.clue;
+    const wrongs = otherConcepts.slice(0, 3);
+    const choices = shuffle([correct, ...wrongs]);
+    return {
+      question,
+      choices,
+      correct,
+      explanation: `${concept.explanation} จึงสอดคล้องกับ ${input.subcategory}`
+    };
+  }
+
+  if (mode === "except-concept") {
+    const question = pickOne([
+      `ข้อใดไม่ใช่สาระหลักของ ${input.subcategory}?`,
+      `หากโจทย์กำหนดว่าเนื้อหาอยู่ภายใต้ ${input.subcategory} ข้อใดต่อไปนี้ไม่เข้าพวก?`,
+      `ข้อใดไม่สอดคล้องกับหลักสำคัญของ ${input.subcategory}?`
+    ]);
+    const correct = otherConcepts[0] ?? pickOne(acts.filter((act) => act !== input.subcategory));
+    const wrongs = shuffle(ownConcepts).slice(0, 3);
+    const choices = shuffle([correct, ...wrongs]);
+    return {
+      question,
+      choices,
+      correct,
+      explanation: `${correct} ไม่ใช่สาระหลักของ ${input.subcategory}`
+    };
+  }
+
   const stemTemplates = [
-    `ข้อใดเป็นสาระสำคัญของ ${input.subcategory}?`,
     `หากโจทย์กล่าวถึง "${concept.clue}" ข้อสอบนั้นควรอยู่ภายใต้กฎหมายใด?`,
     `ประเด็น "${concept.clue}" สัมพันธ์กับกฎหมายฉบับใดมากที่สุด?`,
-    `ข้อใดกล่าวถึง ${input.subcategory} ได้ถูกต้องที่สุด?`,
-    `ถ้าหน่วยงานรัฐต้องพิจารณาเรื่อง "${concept.clue}" ควรอ้างอิงกฎหมายใด?`
+    `ถ้าหน่วยงานรัฐต้องพิจารณาเรื่อง "${concept.clue}" ควรอ้างอิงกฎหมายใด?`,
+    `สถานการณ์ที่เกี่ยวกับ "${concept.clue}" ควรเชื่อมโยงกับกฎหมายฉบับใดเป็นหลัก?`
   ];
   const question = pickOne(stemTemplates);
   const correct = input.subcategory;

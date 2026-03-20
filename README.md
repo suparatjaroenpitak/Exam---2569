@@ -1,6 +1,6 @@
 # ระบบฝึกทำข้อสอบออนไลน์
 
-โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ได้ทั้งแบบ rule-based และด้วยโมเดลภาษาไทยเชิงกำเนิด `mistralai/mistral-7b-v0.1`
+โปรเจกต์นี้เป็นเว็บแอปสำหรับฝึกทำข้อสอบ ก.พ. ออนไลน์ พัฒนาด้วย Next.js App Router, TypeScript และ Tailwind CSS โดยรองรับผู้ใช้ทั่วไปและผู้ดูแลระบบ มีระบบยืนยันตัวตนด้วย JWT, เก็บข้อมูลด้วยไฟล์ Excel ในโฟลเดอร์ `data/`, นำเข้าข้อสอบจาก PDF, จัดหมวดหมู่อัตโนมัติ, ป้องกันข้อสอบซ้ำ และสร้างข้อสอบใหม่ด้วย Python AI engine ที่ขับด้วย Transformers ภายในโปรเจกต์
 
 ## ความสามารถหลัก
 
@@ -12,7 +12,7 @@
 - ระบบจับเวลาในการสอบและตรวจคะแนนอัตโนมัติ
 - ดูประวัติการสอบย้อนหลังและสถิติผลลัพธ์แยกตามวิชาและหัวข้อย่อย
 - ผู้ดูแลสามารถนำเข้าข้อสอบจาก PDF ได้ทั้งแบบ parser ปกติและแบบใช้ OpenAI ช่วยแยกข้อสอบ
-- ผู้ดูแลสามารถสร้างข้อสอบใหม่ด้วย AI ตามวิชา/หัวข้อย่อย/ระดับความยาก หรือใช้ตัวสร้างแบบไม่พึ่ง LLM
+- ผู้ดูแลสามารถสร้างข้อสอบใหม่ด้วย Python AI engine ที่ใช้ Transformers ตามวิชา/หัวข้อย่อย/ระดับความยาก และระบบจะล้างข้อสอบ AI ชุดเก่าก่อนบันทึกชุดใหม่
 - ตรวจจับข้อสอบซ้ำก่อนบันทึกเข้าคลัง
 - ผู้ดูแลสามารถดูรายการข้อสอบทั้งหมดพร้อมโจทย์ ตัวเลือก คำตอบ และคำอธิบายได้ในหน้า admin
 - ผู้ดูแลสามารถปรับเวลาเริ่มต้นของข้อสอบ และปรับเวลาถอยหลังระหว่างสอบได้
@@ -134,7 +134,10 @@ DATA_DIR=data
 JWT_SECRET=replace-with-a-long-random-secret
 HUGGINGFACE_API_KEY=
 THAI_GENERATOR_BASE_URL=https://api-inference.huggingface.co/models
-THAI_GENERATOR_MODEL=mistralai/mistral-7b-v0.1
+THAI_GENERATOR_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+TRANSFORMERS_MODEL=Qwen/Qwen2.5-1.5B-Instruct
+TRANSFORMERS_MAX_NEW_TOKENS=1400
+TRANSFORMERS_TEMPERATURE=0.95
 DEFAULT_ADMIN_EMAIL=admin@example.com
 DEFAULT_ADMIN_PASSWORD=Admin12345!
 ```
@@ -143,25 +146,18 @@ DEFAULT_ADMIN_PASSWORD=Admin12345!
 
 ระบบใช้ 2 ส่วนแยกกันชัดเจน:
 
-- การสร้างข้อสอบจากหน้า admin ใช้โมเดลภาษาไทยเชิงกำเนิด `mistralai/mistral-7b-v0.1` ผ่าน Hugging Face Inference API
+- การสร้างข้อสอบจากหน้า admin ใช้ Python AI engine ภายใน `ai_engine/question_generator.py` และไลบรารี `transformers` เพื่อสร้างข้อสอบตาม subject/subcategory/count/difficulty ที่เลือก
 - การนำเข้า PDF และการจัดหมวด/ตรวจสอบข้อสอบยังใช้ตัวแยกและกฎ Thai NLP ภายในแอป
-- ถ้าเรียกโมเดลไม่สำเร็จ ระบบจะ fallback ไปใช้ template generator เพื่อไม่ให้หน้า admin พัง
+- เมื่อสร้างข้อสอบจากหน้า admin ระบบจะลบข้อสอบที่มี `source = ai` ชุดเก่าทิ้งก่อนบันทึกชุดใหม่
 
-### Fallback: Mistral AI
+ไลบรารี Python ที่เกี่ยวข้องสำหรับเส้นทางนี้อยู่ใน `ai_engine/requirements.txt` และสามารถติดตั้งได้ด้วย `pip install -r ai_engine/requirements.txt`
 
-เริ่มจากเวอร์ชันนี้ โมเดลหลักสำหรับการสร้างข้อสอบจะเป็น `Mistral` (ค่าใน `THAI_GENERATOR_MODEL`) — ถ้าโมเดลหลักไม่สามารถสร้างข้อสอบที่เป็น JSON หรือให้ผลลัพธ์เพียงพอ ระบบจะลองเรียกโมเดลสำรอง (ถ้ามีการกำหนด) หรือใช้ template generator เป็น fallback เพื่อไม่ให้หน้า admin ว่างเปล่า
+สำหรับการสร้างข้อสอบด้วย Transformers ต้องตั้งค่า `HUGGINGFACE_API_KEY` เป็น token แบบ fine-grained ที่มีสิทธิ์ `Make calls to Inference Providers` มิฉะนั้น route สร้างข้อสอบจะตอบกลับด้วย error ชัดเจนและจะไม่ล้างคลังข้อสอบเดิม
 
-ตั้งค่าที่เกี่ยวข้อง (ใน `.env.local`):
+ตัวอย่าง 
 
-```env
-MISTRAL_BASE_URL=https://api-inference.huggingface.co/models
-MISTRAL_MODEL=mistralai/mistral-7b-v0.1
-# (Hugging Face API key ใช้ตัวเดียวกับ HUGGINGFACE_API_KEY)
-```
+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
 
-การตั้งค่านี้เป็น optional — ถ้าไม่ตั้งไว้ ระบบจะยังทำงานเหมือนเดิม (จะพยายามจากโมเดลหลัก แล้วลงไปที่ template fallback)
-
-หมายเหตุ: ตัวโมเดลเป็น open-weight และใช้ฟรีในเชิงโมเดล แต่การเรียกผ่าน Hugging Face hosted inference โดยทั่วไปควรใช้ `HUGGINGFACE_API_KEY` ของบัญชี Hugging Face เพื่อให้เรียกใช้งานได้เสถียร
 
 ขั้นตอนการตั้งค่าสำหรับการพัฒนา (local):
 

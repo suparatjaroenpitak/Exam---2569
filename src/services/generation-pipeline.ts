@@ -1,12 +1,13 @@
-import { generateQuestionsWithTemplates, generateQuestionsWithWangchanNlp } from "./wangchan-nlp-service";
 import { aiValidateQuestion } from "./ai-validator";
 import { isDuplicate, topicMatches, computeQualityScore, validateShape } from "@/services/ai-validation-service";
 import { generateWithPythonEngine } from "@/services/python-ai-service";
-import { loadQuestions, appendQuestions, restoreFromBackup } from "@/lib/excel-db";
+import { loadQuestions, appendQuestions, restoreFromBackup, saveQuestions } from "@/lib/excel-db";
 import { appendGenerationLog } from "@/lib/generation-log";
 import { appendImportLog } from "@/lib/import-log";
 
 let isSaving = false;
+
+type ProgressReporter = (update: { progress: number; stage: string; message: string }) => void | Promise<void>;
 
 export function validateQuestion(q: any) {
   if (!q) return { valid: false, reason: "missing" };
@@ -61,128 +62,111 @@ async function saveWithRetry(rows: any[]) {
   }
 }
 
-export async function generateAndSave(payload: { category: string; subcategory: string; count: number; difficulty: string }) {
-  // Generate with retries: sometimes the LLM returns malformed or empty results.
+async function purgeAiGeneratedQuestions() {
+  const existing = await loadQuestions();
+  const remaining = existing.filter((row) => String(row.source || "").toLowerCase() !== "ai");
+  const removed = existing.length - remaining.length;
+  if (removed > 0) {
+    await saveQuestions(remaining as any[]);
+  }
+  return { removed, remaining: remaining.length };
+}
+
+export async function generateAndSave(payload: { category: string; subcategory: string; count: number; difficulty: string; onProgress?: ProgressReporter }) {
+  const report = async (progress: number, stage: string, message: string) => {
+    if (!payload.onProgress) return;
+    await payload.onProgress({ progress, stage, message });
+  };
+
+  await report(8, "preparing", `Preparing ${payload.count} questions for ${payload.subcategory}`);
+  // Generate with retries using the Transformers-backed Python engine only.
   const maxAttempts = 3;
   let generated: any[] = [];
-  let fallbackUsed = false;
+  let lastGenerationError: Error | null = null;
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    generated = await generateQuestionsWithWangchanNlp({
-      category: payload.category as any,
-      subcategory: payload.subcategory as any,
-      count: payload.count,
-      difficulty: payload.difficulty as any,
-      // Allow template fallback here so that if LLMs fail, we still get generated content
-      allowTemplateFallback: true
-    });
+    await report(12 + (attempt - 1) * 8, "generating", `Generating draft questions${maxAttempts > 1 ? ` (attempt ${attempt}/${maxAttempts})` : ""}`);
+    try {
+      generated = await generateWithPythonEngine({
+        category: payload.category,
+        subcategory: payload.subcategory,
+        count: payload.count,
+        difficulty: payload.difficulty
+      });
+      lastGenerationError = null;
+    } catch (error) {
+      lastGenerationError = error instanceof Error ? error : new Error(String(error));
+      generated = [];
+    }
 
     if (Array.isArray(generated) && generated.length > 0) break;
-    // small delay before retrying
     await new Promise((res) => setTimeout(res, 600));
   }
-
-  // If after retries we still have zero generated questions, force a template fallback
   if (!Array.isArray(generated) || generated.length === 0) {
-    // Use templates to guarantee output
-    const templates = await generateQuestionsWithTemplates({
-      category: payload.category as any,
-      subcategory: payload.subcategory as any,
-      count: payload.count,
-      difficulty: payload.difficulty as any
-    });
-    generated = templates;
-    fallbackUsed = true;
+    throw new Error(lastGenerationError?.message || "Transformers generator returned no questions. Check HUGGINGFACE_API_KEY and model configuration.");
   }
+
+  await report(42, "validating", `Validating ${generated.length} generated questions`);
 
   // Validate strictly with duplicate detection, topic matching, and quality scoring
   const valid: any[] = [];
   const rejected: any[] = [];
 
-  const existingQuestions = (await loadQuestions()).map((r) => String(r.question || ""));
+  const existingQuestions = (await loadQuestions())
+    .filter((row) => String(row.source || "").toLowerCase() !== "ai")
+    .map((r) => String(r.question || ""));
 
-  for (const g of generated) {
-    // shape check
+  async function tryAcceptCandidate(g: any, allowReplacement = true): Promise<boolean> {
     const baseCheck: any = validateQuestion(g);
     if (!baseCheck.valid) {
       rejected.push({ row: g, reason: baseCheck.reason });
-      continue;
+      return false;
     }
 
-    // run python-based shape validator (best-effort)
     try {
       const pyShape = await validateShape(g as any);
       if (pyShape === null || !pyShape.valid) {
         rejected.push({ row: g, reason: pyShape ? pyShape.reason : "python-validator-failed" });
-        continue;
+        return false;
       }
     } catch (e) {
       // ignore python validator failures and continue
     }
 
-    // topic match strict
     try {
       const matches = await topicMatches(String(payload.subcategory), `${g.question}\n${g.choice_a}\n${g.choice_b}\n${g.choice_c}\n${g.choice_d}`);
       if (!matches) {
         rejected.push({ row: g, reason: "topic-mismatch" });
-        continue;
+        return false;
       }
     } catch (e) {
       rejected.push({ row: g, reason: "topic-check-failed" });
-      continue;
+      return false;
     }
 
-    // duplicate detection (against DB and accepted so far)
     try {
       const dupAgainstDB = await isDuplicate(g.question, existingQuestions, 0.85);
       const dupAgainstBatch = await isDuplicate(g.question, valid.map((v) => v.question || ""), 0.85);
       if (dupAgainstDB || dupAgainstBatch) {
-        // attempt to regenerate replacement up to 3 times using Python engine
-        let replaced = false;
-        for (let rAttempt = 0; rAttempt < 3 && !replaced; rAttempt++) {
-          try {
-            const replRows = await generateWithPythonEngine({ category: payload.category, subcategory: payload.subcategory, count: 1, difficulty: payload.difficulty });
-            if (Array.isArray(replRows) && replRows.length > 0) {
-              const repl = replRows[0];
-              const replDup = await isDuplicate(repl.question, existingQuestions.concat(valid.map((v) => v.question || "")), 0.85);
-              const replTopic = await topicMatches(String(payload.subcategory), `${repl.question}\n${repl.choice_a}\n${repl.choice_b}\n${repl.choice_c}\n${repl.choice_d}`);
-              if (!replDup && replTopic) {
-                // accept replacement
-                (repl as any).__needsReview = false;
-                valid.push(repl as any);
-                replaced = true;
-                break;
-              }
-            }
-          } catch (e) {
-            // continue attempts
-          }
-        }
-
-        if (!replaced) {
-          rejected.push({ row: g, reason: "duplicate" });
-        }
-        continue;
+        rejected.push({ row: g, reason: "duplicate" });
+        return false;
       }
     } catch (e) {
-      // if duplicate check fails, conservatively reject
       rejected.push({ row: g, reason: "duplicate-check-failed" });
-      continue;
+      return false;
     }
 
-    // compute quality score and enforce threshold >=70
     try {
       const qscore = computeQualityScore({ question: g.question, choice_a: g.choice_a, choice_b: g.choice_b, choice_c: g.choice_c, choice_d: g.choice_d, difficulty: payload.difficulty, topic: String(payload.subcategory) });
       (g as any).quality_score = qscore;
       if (qscore < 70) {
         rejected.push({ row: g, reason: `low-quality:${qscore}` });
-        continue;
+        return false;
       }
     } catch (e) {
-      // on scoring failure, mark for review but accept
       (g as any).quality_score = 50;
     }
 
-    // Best-effort AI classifier: if it fails, mark for review but still accept minimal question
     let needsReview = Boolean(baseCheck.needsReview);
     try {
       const ok = await aiValidateQuestion({ question: g.question, choices: [g.choice_a, g.choice_b, g.choice_c, g.choice_d], correct: g.correct_answer });
@@ -195,6 +179,38 @@ export async function generateAndSave(payload: { category: string; subcategory: 
 
     (g as any).__needsReview = needsReview;
     valid.push(g);
+    return true;
+  }
+
+  for (const [index, g] of generated.entries()) {
+    await tryAcceptCandidate(g, true);
+    const validationProgress = Math.round(42 + (((index + 1) / Math.max(generated.length, 1)) * 28));
+    await report(validationProgress, "validating", `Validated ${index + 1}/${generated.length} generated questions`);
+  }
+
+  let fillAttempts = 0;
+  const maxFillAttempts = Math.max(payload.count * 3, 12);
+  while (valid.length < payload.count && fillAttempts < maxFillAttempts) {
+    fillAttempts += 1;
+    const remaining = payload.count - valid.length;
+    const batchSize = Math.min(Math.max(remaining, 1), 5);
+    await report(72, "top-up", `Generating ${batchSize} replacement question${batchSize > 1 ? "s" : ""} to reach ${payload.count}`);
+    try {
+      const replRows = await generateWithPythonEngine({ category: payload.category, subcategory: payload.subcategory, count: batchSize, difficulty: payload.difficulty });
+      if (!Array.isArray(replRows) || replRows.length === 0) {
+        continue;
+      }
+      for (const replRow of replRows) {
+        if (valid.length >= payload.count) {
+          break;
+        }
+        await tryAcceptCandidate(replRow, false);
+      }
+      const topUpProgress = Math.min(88, 72 + Math.round((valid.length / Math.max(payload.count, 1)) * 16));
+      await report(topUpProgress, "top-up", `Accepted ${valid.length}/${payload.count} questions after top-up`);
+    } catch (e) {
+      // keep trying until cap
+    }
   }
 
   // Save valid rows using transactional retry
@@ -202,7 +218,11 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   let saved = 0;
   let before = 0;
   let after = 0;
+  let clearedAi = 0;
   if (valid.length > 0) {
+    await report(92, "saving", `Saving ${valid.length} validated questions`);
+    const purge = await purgeAiGeneratedQuestions();
+    clearedAi = purge.removed;
     const res = await saveWithRetry(valid);
     saved = res.saved;
     before = res.before;
@@ -210,21 +230,37 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   } else {
     before = (await loadQuestions()).length;
     after = before;
+    throw new Error("Transformers generated questions but none passed validation.");
   }
 
   // Append generation log (xlsx)
   try {
-    await appendGenerationLog({ timestamp: genTimestamp, generated: generated.length, valid: valid.length, saved: saved, failed: rejected.length, fallbackUsed });
+    await appendGenerationLog({ timestamp: genTimestamp, generated: generated.length, valid: valid.length, saved: saved, failed: rejected.length, fallbackUsed: false });
   } catch (e) {
     // non-fatal
   }
 
   // Append import log (existing JSON log for imports)
-  await appendImportLog({ import_time: genTimestamp, questions_generated: generated.length, questions_saved: saved, database_total_before: before, database_total_after: after, rejected_questions: rejected.length });
+  await appendImportLog({ import_time: genTimestamp, questions_generated: generated.length, questions_saved: saved, database_total_before: before, database_total_after: after, rejected_questions: rejected.length, cleared_ai_questions: clearedAi });
 
-  // Refresh client UI responsibility: route handler should call router.refresh() client-side.
+  // Invalidate the in-memory question cache so the next admin page refresh sees the new rows immediately.
+  await report(98, "refreshing", "Refreshing question cache");
+  await refreshQuestionList();
 
-  return { generated: generated.length, valid: valid.length, saved, rejected: rejected.length, totalBefore: before, totalAfter: after, fallbackUsed };
+  await report(100, "completed", `Saved ${saved}/${payload.count} questions`);
+
+  return {
+    generated: generated.length,
+    valid: valid.length,
+    saved,
+    rejected: rejected.length,
+    totalBefore: before,
+    totalAfter: after,
+    clearedAi,
+    requested: payload.count,
+    completionPercent: Math.round((saved / Math.max(payload.count, 1)) * 100),
+    fallbackUsed: false
+  };
 }
 
 export async function refreshQuestionList() {

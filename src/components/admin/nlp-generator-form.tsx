@@ -9,6 +9,50 @@ import { DIFFICULTY_OPTIONS, EXAM_CATEGORIES, SUBJECT_SUBCATEGORIES } from "@/li
 import { getCategoryLabel, getDifficultyLabel, getSubcategoryLabel, translateApiMessage } from "@/i18n";
 import type { ExamCategory, ExamSubcategory, QuestionDifficulty } from "@/lib/types";
 
+type GenerationJobResponse = {
+  id: string;
+  state: "queued" | "running" | "completed" | "failed";
+  progress: number;
+  stage: string;
+  message: string;
+  result?: {
+    message?: string;
+    saved?: number;
+    requested?: number;
+    completionPercent?: number;
+  };
+  error?: string;
+};
+
+function translateStage(locale: string, stage: string, fallback: string) {
+  if (locale !== "th") {
+    return fallback;
+  }
+
+  switch (stage) {
+    case "queued":
+      return "กำลังเข้าคิวงาน...";
+    case "preparing":
+      return "กำลังเตรียมข้อมูล...";
+    case "generating":
+      return "กำลังสร้างข้อสอบจาก AI...";
+    case "validating":
+      return "กำลังตรวจรูปแบบ หัวข้อ และความซ้ำ...";
+    case "top-up":
+      return "กำลังสร้างข้อสอบเพิ่มให้ครบจำนวน...";
+    case "saving":
+      return "กำลังบันทึกข้อสอบลงฐานข้อมูล...";
+    case "refreshing":
+      return "กำลังรีเฟรชรายการข้อสอบ...";
+    case "completed":
+      return fallback;
+    case "failed":
+      return fallback;
+    default:
+      return fallback;
+  }
+}
+
 export function NlpGeneratorForm() {
   const router = useRouter();
   const { locale, translate } = usePreferences();
@@ -19,36 +63,61 @@ export function NlpGeneratorForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState<string | null>(null);
+  const [progressDetail, setProgressDetail] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
     setError(null);
     setLoading(true);
+    setProgress(4);
+    setProgressLabel(locale === "th" ? "กำลังส่งงานไปที่เซิร์ฟเวอร์..." : "Submitting generation job...");
+    setProgressDetail(null);
+
+    const requestedCount = count;
 
     try {
-      let attempt = 0;
-      let final: any = null;
-      do {
-        final = await apiRequest<any>("/api/admin/generate-questions", {
-          method: "POST",
-          body: JSON.stringify({ category, subcategory, count, difficulty })
-        });
-        attempt++;
-        if (final && final.saved === 0 && final.generated > 0 && attempt === 1) {
-          setMessage("AI generation failed, retrying...");
-          // small delay before retrying
-          await new Promise((res) => setTimeout(res, 800));
-          continue;
-        }
-        break;
-      } while (attempt < 2);
+      const startResponse = await apiRequest<{ jobId: string }>("/api/admin/generate-questions", {
+        method: "POST",
+        body: JSON.stringify({ category, subcategory, count, difficulty })
+      });
 
-      if (final) {
-        setMessage(translateApiMessage(locale, final.message));
+      setProgress(6);
+      setProgressLabel(locale === "th" ? "เริ่มประมวลผลแล้ว" : "Job started");
+
+      let final: GenerationJobResponse | null = null;
+      while (!final) {
+        await new Promise((res) => setTimeout(res, 700));
+        const job = await apiRequest<GenerationJobResponse>(`/api/admin/generate-questions?jobId=${encodeURIComponent(startResponse.jobId)}`);
+        setProgress(Math.max(6, Math.min(job.progress ?? 0, 100)));
+        setProgressLabel(translateStage(locale, job.stage, job.message));
+        setProgressDetail(job.message);
+
+        if (job.state === "failed") {
+          throw new Error(job.error || job.message || translate("message.generation-failed"));
+        }
+
+        if (job.state === "completed") {
+          final = job;
+        }
+      }
+
+      if (final?.result) {
+        const completionPercent = typeof final.result.completionPercent === "number"
+          ? final.result.completionPercent
+          : Math.round(((final.result.saved ?? 0) / Math.max(requestedCount, 1)) * 100);
+        setProgress(completionPercent);
+        setProgressLabel(locale === "th" ? `สำเร็จ ${completionPercent}%` : `${completionPercent}% complete`);
+        setProgressDetail(final.message);
+        setMessage(`${translateApiMessage(locale, final.result.message || final.message)} (${final.result.saved ?? 0}/${requestedCount}, ${completionPercent}%)`);
       }
       router.refresh();
     } catch (requestError) {
+      setProgress(0);
+      setProgressLabel(null);
+      setProgressDetail(null);
       setError(requestError instanceof Error ? requestError.message : translate("message.generation-failed"));
     } finally {
       setLoading(false);
@@ -121,6 +190,21 @@ export function NlpGeneratorForm() {
             </select>
           </label>
         </div>
+        {progress > 0 ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
+              <span>{progressLabel ?? translate("admin.generating")}</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+              <div
+                className="h-full rounded-full bg-ember transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            {progressDetail ? <p className="text-xs text-slate-500 dark:text-slate-400">{progressDetail}</p> : null}
+          </div>
+        ) : null}
         {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
         {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
         <button
