@@ -21,7 +21,8 @@ export function getPythonCommand(): PythonCommand {
   const configuredPython = process.env.PYTHON_EXEC;
 
   if (configuredPython) {
-    if (!existsSync(configuredPython)) {
+    const looksLikePath = configuredPython.includes("/") || configuredPython.includes("\\") || /^[A-Za-z]:/.test(configuredPython);
+    if (looksLikePath && !existsSync(configuredPython)) {
       throw new Error(`Configured PYTHON_EXEC does not exist: ${configuredPython}`);
     }
     return { command: configuredPython, args: [] };

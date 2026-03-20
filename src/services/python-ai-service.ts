@@ -11,6 +11,13 @@ export async function generateWithPythonEngine(input: { category: string; subcat
   const resolvedPythonPath = process.env.PYTHONPATH
     ? `${bundledPythonPath}${path.delimiter}${process.env.PYTHONPATH}`
     : bundledPythonPath;
+  const bootstrap = [
+    "import os, runpy, sys",
+    `sys.path.insert(0, ${JSON.stringify(bundledPythonPath)})`,
+    `os.environ['PYTHONPATH'] = ${JSON.stringify(resolvedPythonPath)}`,
+    `sys.argv = [${JSON.stringify(script)}]`,
+    `runpy.run_path(${JSON.stringify(script)}, run_name='__main__')`
+  ].join("; ");
   const payload = JSON.stringify({ subject: input.category, topic: input.subcategory, count: input.count, difficulty: input.difficulty });
   const childEnv = {
     ...process.env,
@@ -23,7 +30,7 @@ export async function generateWithPythonEngine(input: { category: string; subcat
     THAI_GENERATOR_BASE_URL: process.env.THAI_GENERATOR_BASE_URL || env.thaiGeneratorBaseUrl
   };
 
-  const res = spawnSync(python.command, [...python.args, script], {
+  const res = spawnSync(python.command, [...python.args, "-c", bootstrap], {
     input: payload,
     encoding: "utf8",
     maxBuffer: 10 * 1024 * 1024,

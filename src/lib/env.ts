@@ -1,7 +1,7 @@
 export const env = {
   dataDir: process.env.DATA_DIR || "data",
   jwtSecret: process.env.JWT_SECRET || "development-only-secret-change-me",
-  huggingFaceApiKey: process.env.HUGGINGFACE_API_KEY || "",
+  huggingFaceApiKey: process.env.HUGGINGFACE_API_KEY || "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",
   thaiGeneratorBaseUrl: process.env.THAI_GENERATOR_BASE_URL || "https://api-inference.huggingface.co/models",
   // Primary Transformers model used for admin question generation.
   thaiGeneratorModel: process.env.THAI_GENERATOR_MODEL || process.env.TRANSFORMERS_MODEL || "Qwen/Qwen2.5-1.5B-Instruct",
