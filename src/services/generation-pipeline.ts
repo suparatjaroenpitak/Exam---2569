@@ -1,4 +1,4 @@
-import { generateQuestionsWithWangchanNlp } from "./wangchan-nlp-service";
+import { generateQuestionsWithTemplates, generateQuestionsWithWangchanNlp } from "./wangchan-nlp-service";
 import { aiValidateQuestion } from "./ai-validator";
 import { isDuplicate, topicMatches, computeQualityScore, validateShape } from "@/services/ai-validation-service";
 import { generateWithPythonEngine } from "@/services/python-ai-service";
