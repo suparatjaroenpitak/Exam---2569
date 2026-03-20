@@ -33,7 +33,8 @@ export async function generateWithPythonEngine(input: { category: string; subcat
   const stderr = res.stderr ? res.stderr.toString().trim() : "";
 
   if (res.status !== 0) {
-    throw new Error(stderr || stdout || `Python generator exited with status ${res.status}`);
+    const detail = stderr || stdout || `Python generator exited with status ${res.status}`;
+    throw new Error(`${detail} [python=${python.command}${python.args.length ? ` ${python.args.join(" ")}` : ""}]`);
   }
 
   if (!stdout) {

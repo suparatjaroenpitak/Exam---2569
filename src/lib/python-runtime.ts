@@ -18,16 +18,21 @@ function getWindowsPythonCandidates() {
 }
 
 export function getPythonCommand(): PythonCommand {
+  const configuredPython = process.env.PYTHON_EXEC;
+
+  if (configuredPython) {
+    if (!existsSync(configuredPython)) {
+      throw new Error(`Configured PYTHON_EXEC does not exist: ${configuredPython}`);
+    }
+    return { command: configuredPython, args: [] };
+  }
+
   const windowsCandidates = process.platform === "win32"
     ? getWindowsPythonCandidates().find((candidate) => existsSync(candidate))
     : null;
 
   if (windowsCandidates) {
     return { command: windowsCandidates, args: [] };
-  }
-
-  if (process.env.PYTHON_EXEC) {
-    return { command: process.env.PYTHON_EXEC, args: [] };
   }
 
   return { command: process.platform === "win32" ? "py" : "python3", args: process.platform === "win32" ? ["-3.11"] : [] };
