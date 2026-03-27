@@ -228,7 +228,8 @@ pytest ai_engine/tests -q
 
 - รัน `npx prisma generate` ตอน build ของ Next.js app
 - รัน `npx prisma migrate deploy` ก่อน start app
-- ติดตั้ง Python dependencies ให้ AI engine
+- build AI engine จากโฟลเดอร์ `ai_engine` โดยตรง
+- ติดตั้ง Python dependencies จาก `ai_engine/requirements.txt`
 - ผูก app เข้ากับ database และ AI engine อัตโนมัติ
 
 วิธี deploy:

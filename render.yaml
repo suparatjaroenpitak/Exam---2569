@@ -9,10 +9,11 @@ services:
   - type: web
     name: exam-ai-engine
     runtime: python
+    rootDir: ai_engine
     plan: free
     region: singapore
-    buildCommand: pip install --upgrade pip && pip install -r ai_engine/requirements.txt
-    startCommand: uvicorn ai_engine.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     autoDeployTrigger: commit
     healthCheckPath: /health
     envVars:
