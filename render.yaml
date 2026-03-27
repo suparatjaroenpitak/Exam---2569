@@ -43,11 +43,8 @@ services:
         fromDatabase:
           name: exam-app-db
           property: connectionString
-      - key: PYTHON_AI_HOSTPORT
-        fromService:
-          name: exam-ai-engine
-          type: web
-          property: hostport
+      - key: PYTHON_AI_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: ENABLE_TRANSFORMER_FALLBACK

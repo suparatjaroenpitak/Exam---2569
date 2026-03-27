@@ -216,12 +216,17 @@ pytest ai_engine/tests -q
 การเชื่อมต่อระหว่าง services:
 
 - Next app รับ `DATABASE_URL` จาก Render Postgres โดยตรง
-- Next app รับ `PYTHON_AI_HOSTPORT` จาก AI service ผ่าน private network ของ Render
-- ใน runtime แอปจะประกอบเป็น `http://<host:port>` อัตโนมัติถ้าไม่ได้ตั้ง `PYTHON_AI_URL`
+- Next app ควรตั้ง `PYTHON_AI_URL` เป็น public URL ของ AI service เช่น `https://exam-ai-engine.onrender.com`
 - ใน production ปิด Python CLI fallback ด้วย `ALLOW_PYTHON_CLI_FALLBACK=0` เพื่อไม่ให้ Next app พยายามรัน `ai_engine/main.py` ภายใน Node container
+
+ข้อจำกัดสำคัญของ Render free plan:
+
+- free web services ส่ง request ผ่าน private network ได้ แต่รับ private-network traffic ไม่ได้
+- ดังนั้นถ้า AI engine ยังเป็น `type: web` และ `plan: free` ให้ใช้ public URL ของ AI service แทน `hostport`
 
 ค่าที่ Render จะขอให้กรอกเองครั้งแรก:
 
+- `PYTHON_AI_URL`
 - `HUGGINGFACE_API_KEY`
 - `DEFAULT_ADMIN_EMAIL`
 - `DEFAULT_ADMIN_PASSWORD`
