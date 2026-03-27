@@ -13,13 +13,17 @@
         "ai:dev": "uvicorn ai_engine.main:app --reload --host 127.0.0.1 --port 8000"
     },
     "dependencies": {
+        "@prisma/adapter-better-sqlite3": "^7.5.0",
+        "@prisma/adapter-pg": "^7.5.0",
         "@prisma/client": "^7.5.0",
         "bcryptjs": "^3.0.2",
+        "better-sqlite3": "^12.8.0",
         "clsx": "^2.1.1",
         "dotenv": "^17.3.1",
         "jose": "^6.0.10",
         "next": "^15.2.4",
         "pdf-parse": "^1.1.1",
+        "pg": "^8.20.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "zod": "^3.24.2"
