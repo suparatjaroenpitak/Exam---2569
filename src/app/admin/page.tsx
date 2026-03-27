@@ -15,7 +15,7 @@ export default async function AdminPage() {
     <AppShell
       user={user}
       title="Admin Dashboard"
-      subtitle="Import question banks, generate new content, and monitor the Excel-backed inventory."
+      subtitle="Import question banks, generate Python-verified content, and monitor the Prisma-backed inventory."
       titleKey="admin.title"
       subtitleKey="admin.subtitle"
     >

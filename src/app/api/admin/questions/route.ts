@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireApiAdmin } from "@/lib/api-guards";
-import { loadQuestions, saveQuestions } from "@/lib/excel-db";
+import { loadQuestions, saveQuestions } from "@/lib/prisma-db";
 
 export async function DELETE(request: NextRequest) {
   const guard = await requireApiAdmin(request);
@@ -22,7 +22,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ message: "No ids provided" }, { status: 400 });
     }
 
-    // Save remaining rows (overwrite sheet) - backup is handled by excel-db utilities
+    // Save remaining rows by replacing the filtered collection in Prisma.
     await saveQuestions(remaining as any[]);
 
     return NextResponse.json({ message: "Deleted", remaining: remaining.length });

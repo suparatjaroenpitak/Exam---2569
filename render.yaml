@@ -1,36 +1,61 @@
+databases:
+  - name: exam-app-db
+    databaseName: examapp
+    user: examapp
+    region: singapore
+    postgresMajorVersion: "17"
+
 services:
+  - type: web
+    name: exam-ai-engine
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install --upgrade pip && pip install -r ai_engine/requirements.txt
+    startCommand: uvicorn ai_engine.main:app --host 0.0.0.0 --port $PORT
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ENABLE_TRANSFORMER_FALLBACK
+        value: "0"
+      - key: TRANSFORMERS_MODEL
+        value: Qwen/Qwen2.5-1.5B-Instruct
+
   - type: web
     name: online-exam-practice-system
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npx prisma generate && npm run build
+    preDeployCommand: npx prisma migrate deploy
     startCommand: npm run start
     autoDeployTrigger: commit
     healthCheckPath: /login
     envVars:
       - key: NODE_VERSION
         value: 22
-      - key: PYTHON_EXEC
-        value: python3
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: DATA_DIR
-        value: data
+      - key: DATABASE_PROVIDER
+        value: postgresql
+      - key: DATABASE_URL
+        fromDatabase:
+          name: exam-app-db
+          property: connectionString
+      - key: PYTHON_AI_HOSTPORT
+        fromService:
+          name: exam-ai-engine
+          type: web
+          property: hostport
       - key: JWT_SECRET
         generateValue: true
+      - key: ENABLE_TRANSFORMER_FALLBACK
+        value: "0"
       - key: HUGGINGFACE_API_KEY
         sync: false
       - key: TRANSFORMERS_MODEL
         value: Qwen/Qwen2.5-1.5B-Instruct
-      - key: TRANSFORMERS_MAX_NEW_TOKENS
-        value: "1400"
-      - key: TRANSFORMERS_TEMPERATURE
-        value: "0.95"
       - key: DEFAULT_ADMIN_EMAIL
         sync: false
       - key: DEFAULT_ADMIN_PASSWORD
         sync: false
-
-# If you move to a paid Render plan later, you can attach a persistent disk and
-# mount it at /opt/render/project/src/data without changing the application code.

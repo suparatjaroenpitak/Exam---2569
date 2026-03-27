@@ -1,13 +1,12 @@
 import path from "path";
 import { existsSync } from "fs";
 import { mkdir, readFile, writeFile } from "fs/promises";
-import { env } from "@/lib/env";
 
-const DATA_DIR = path.isAbsolute(env.dataDir) ? env.dataDir : path.resolve(process.cwd(), env.dataDir);
-const importLogPath = path.join(DATA_DIR, "import_log.json");
+const LOG_DIR = path.resolve(process.cwd(), "logs");
+const importLogPath = path.join(LOG_DIR, "import_log.json");
 
 async function ensureDir() {
-  await mkdir(DATA_DIR, { recursive: true });
+  await mkdir(LOG_DIR, { recursive: true });
 }
 
 export async function appendImportLog(entry: Record<string, unknown>) {

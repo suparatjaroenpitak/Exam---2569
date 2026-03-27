@@ -1,7 +1,4 @@
-import { spawnSync } from "child_process";
-import path from "path";
-
-import { getPythonCommand } from "@/lib/python-runtime";
+import { callPythonAi } from "@/services/python-engine-client";
 
 const TOPIC_HINTS: Partial<Record<string, string[]>> = {
   Percentage: ["percentage", "percent", "เปอร์เซ็นต์", "ร้อยละ", "%"],
@@ -56,34 +53,35 @@ const TOPIC_HINTS: Partial<Record<string, string[]>> = {
   "พ.ร.บ.มาตราฐานทางจริยธรรม 2562": ["จริยธรรม", "มาตรฐานทางจริยธรรม", "2562"]
 };
 
-function runPy(script: string, payload: any) {
-  const python = getPythonCommand();
-  const scriptPath = path.join(process.cwd(), "ai_engine", script);
+export async function isDuplicate(candidate: string, existing: string[], threshold = 0.85): Promise<boolean> {
   try {
-    const res = spawnSync(python.command, [...python.args, scriptPath], { input: JSON.stringify(payload), encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
-    if (res.error) throw res.error;
-    const out = res.stdout ? res.stdout.toString() : "";
-    if (!out) return null;
-    return JSON.parse(out);
-  } catch (e) {
-    return null;
+    const response = await callPythonAi("/validate/duplicate", "duplicate", { candidate, existing, threshold });
+    return Boolean(response?.duplicate);
+  } catch {
+    return false;
   }
 }
 
-export async function isDuplicate(candidate: string, existing: string[], threshold = 0.85): Promise<boolean> {
-  const res = runPy("duplicate_detector.py", { candidate, existing, threshold });
-  return !!(res && res.duplicate);
-}
-
 export async function topicMatches(topic: string, text: string): Promise<boolean> {
-  const res = runPy("topic_classifier.py", { topic, text });
-  return !!(res && res.matches);
+  try {
+    const response = await callPythonAi("/validate/topic", "topic", { topic, text });
+    return Boolean(response?.matches);
+  } catch {
+    return false;
+  }
 }
 
-export async function validateShape(payload: any): Promise<{ valid: boolean; reason: string } | null> {
-  const res = runPy("question_validator.py", payload);
-  if (!res) return null;
-  return { valid: !!res.valid, reason: (res.reason || "") } as any;
+export async function validateShape(payload: any): Promise<{ valid: boolean; reason: string; quality_score?: number } | null> {
+  try {
+    const response = await callPythonAi("/validate/question", "validate", payload);
+    return {
+      valid: Boolean(response?.valid),
+      reason: String(response?.reason || ""),
+      quality_score: typeof response?.quality_score === "number" ? response.quality_score : undefined
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function computeQualityScore(q: { question: string; choice_a: string; choice_b: string; choice_c: string; choice_d: string; difficulty?: string; topic?: string }): number {

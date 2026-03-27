@@ -1,4 +1,4 @@
-import { appendHistory, loadHistory } from "@/lib/excel-db";
+import { appendHistory, loadHistory } from "@/lib/prisma-db";
 import { normalizeSubject } from "@/lib/constants";
 import type { DashboardStats, ExamResultRow } from "@/lib/types";
 

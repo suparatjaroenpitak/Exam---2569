@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireApiAdmin } from "@/lib/api-guards";
-import { loadQuestions } from "@/lib/excel-db";
+import { loadQuestions } from "@/lib/prisma-db";
 import { readGenerationLogs } from "@/lib/generation-log";
 import { readImportLog } from "@/lib/import-log";
 

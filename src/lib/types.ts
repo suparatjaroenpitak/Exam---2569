@@ -54,7 +54,7 @@ export type ExamSubcategory =
   | "พ.ร.บ.มาตราฐานทางจริยธรรม 2562";
 export type QuestionDifficulty = "easy" | "medium" | "hard";
 export type AnswerKey = "A" | "B" | "C" | "D";
-export type QuestionSource = "pdf" | "nlp" | "llm" | "manual";
+export type QuestionSource = "pdf" | "nlp" | "llm" | "manual" | "python" | "python-rule" | "python-transformer";
 
 export type UserRecord = {
   id: string;
@@ -84,6 +84,11 @@ export type QuestionRecord = {
   createdAt: string;
   model_subcategory?: string;
   status?: "REVIEW_REQUIRED" | "VALID";
+  quality_score?: number;
+  topic_verified?: boolean;
+  no_duplicate?: boolean;
+  quality_passed?: boolean;
+  hash?: string;
 };
 
 export type QuestionChoice = {

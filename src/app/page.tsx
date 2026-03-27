@@ -51,7 +51,7 @@ export default function HomePage() {
               </div>
               <div className="rounded-[2rem] bg-white/90 p-5 shadow-panel backdrop-blur dark:bg-slate-950/80">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{translate("home.storage")}</p>
-                <p className="mt-3 text-3xl font-bold text-slate-950 dark:text-slate-100">XLSX</p>
+                <p className="mt-3 text-3xl font-bold text-slate-950 dark:text-slate-100">Prisma</p>
               </div>
               <div className="rounded-[2rem] bg-amber-100 p-5 shadow-panel">
                 <p className="text-xs uppercase tracking-[0.2em] text-amber-800">{translate("home.timer")}</p>

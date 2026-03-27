@@ -6,17 +6,22 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "eslint . --max-warnings=0"
+        "lint": "eslint . --max-warnings=0",
+        "postinstall": "prisma generate",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate:dev": "prisma migrate dev",
+        "ai:dev": "uvicorn ai_engine.main:app --reload --host 127.0.0.1 --port 8000"
     },
     "dependencies": {
+        "@prisma/client": "^7.5.0",
         "bcryptjs": "^3.0.2",
         "clsx": "^2.1.1",
+        "dotenv": "^17.3.1",
         "jose": "^6.0.10",
         "next": "^15.2.4",
         "pdf-parse": "^1.1.1",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
-        "xlsx": "^0.18.5",
         "zod": "^3.24.2"
     },
     "devDependencies": {
@@ -28,6 +33,7 @@
         "eslint": "^9.22.0",
         "eslint-config-next": "^15.2.4",
         "postcss": "^8.5.3",
+        "prisma": "^7.5.0",
         "tailwindcss": "^3.4.17",
         "typescript": "^5.8.2"
     }

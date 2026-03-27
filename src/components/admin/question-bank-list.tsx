@@ -131,14 +131,17 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
               ) : null}
               <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-800">{getDifficultyLabel(locale, question.difficulty)}</span>
               <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-800">{question.source}</span>
-              {(["python","llm","nlp"].includes(String(question.source)) || question.source?.toLowerCase?.() === "python") ? (
+              {(["python", "python-rule", "python-transformer", "llm", "nlp"].includes(String(question.source)) || question.source?.toLowerCase?.() === "python") ? (
                 <span className="rounded-full bg-indigo-50 px-3 py-1 text-indigo-800">AI Generated</span>
               ) : null}
-              {question.model_subcategory ? (
+              {question.topic_verified ? (
                 <span className="rounded-full bg-lime-50 px-3 py-1 text-lime-800">Topic Verified</span>
               ) : null}
-              {typeof (question as any).quality_score === "number" && (question as any).quality_score >= 70 ? (
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">Quality Checked</span>
+              {question.no_duplicate ? (
+                <span className="rounded-full bg-cyan-50 px-3 py-1 text-cyan-800">No Duplicate</span>
+              ) : null}
+              {typeof question.quality_score === "number" && question.quality_score >= 70 ? (
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">Quality Passed</span>
               ) : null}
             </div>
             <h4 className="mt-4 text-lg font-semibold text-slate-950 dark:text-slate-100">{question.question}</h4>

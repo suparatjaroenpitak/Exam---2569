@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 
 import { env } from "@/lib/env";
-import { appendUsers, loadUsers, saveUsers } from "@/lib/excel-db";
+import { appendUsers, loadUsers, saveUsers } from "@/lib/prisma-db";
 import { sanitizeUser } from "@/lib/auth";
 import type { PublicUser, UserRecord } from "@/lib/types";
 

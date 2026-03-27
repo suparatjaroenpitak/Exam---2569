@@ -1,6 +1,7 @@
 import { appendStructuredQuestions, getQuestions } from "@/services/question-service";
+import { generateAndSave } from "@/services/generation-pipeline";
 import { recordExamHistory } from "@/services/history-service";
-import { getExamDurationSeconds } from "@/lib/constants";
+import { getDefaultSubcategory, getExamDurationSeconds } from "@/lib/constants";
 import { shuffleArray } from "@/utils/shuffle";
 import type {
   AnswerKey,
@@ -30,13 +31,29 @@ export async function createExamSession(input: {
   durationSecondsOverride?: number;
   difficulty?: "easy" | "medium" | "hard";
 }): Promise<ExamSession> {
-  const questions = await getQuestions({ subject: input.category, subcategory: input.subcategory, difficulty: input.difficulty });
+  const initialQuestions = await getQuestions({ subject: input.category, subcategory: input.subcategory, difficulty: input.difficulty });
+  const requestedCount = input.count && input.count > 0 ? input.count : initialQuestions.length || 10;
+  let questions = initialQuestions;
+
+  if (questions.length < requestedCount) {
+    const generationTopic = input.subcategory && input.subcategory !== "all"
+      ? input.subcategory
+      : getDefaultSubcategory(input.category);
+
+    await generateAndSave({
+      category: input.category,
+      subcategory: generationTopic,
+      count: requestedCount - questions.length,
+      difficulty: input.difficulty || "medium"
+    });
+
+    questions = await getQuestions({ subject: input.category, subcategory: input.subcategory, difficulty: input.difficulty });
+  }
 
   if (questions.length === 0) {
     throw new Error(`Not enough questions in ${input.category}. Available: 0`);
   }
 
-  const requestedCount = input.count && input.count > 0 ? input.count : questions.length;
   const actualCount = Math.min(requestedCount, questions.length);
   const selected = shuffleArray(questions).slice(0, actualCount);
   const sessionQuestions: ExamQuestion[] = selected.map((question) => ({

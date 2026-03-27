@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         String        @default("user")
+  createdAt    DateTime      @default(now())
+  examHistory  ExamHistory[]
+}
+
+model Question {
+  id              String   @id @default(uuid())
+  subject         String
+  topic           String
+  question        String
+  choiceA         String
+  choiceB         String
+  choiceC         String
+  choiceD         String
+  answer          String
+  explanation     String
+  difficulty      String
+  hash            String   @unique
+  source          String   @default("python")
+  status          String   @default("VALID")
+  qualityScore    Int      @default(0)
+  topicVerified   Boolean  @default(false)
+  noDuplicate     Boolean  @default(false)
+  qualityPassed   Boolean  @default(false)
+  modelSubcategory String?
+  createdAt       DateTime @default(now())
+
+  @@index([subject, topic, difficulty])
+}
+
+model ExamHistory {
+  id              String   @id @default(uuid())
+  userId          String
+  subject         String
+  topic           String?
+  totalQuestions  Int
+  correctCount    Int
+  wrongCount      Int
+  score           Int
+  durationSeconds Int
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}

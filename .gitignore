@@ -7,3 +7,8 @@ coverage/
 .env.local
 .env.production
 *.log
+*.tsbuildinfo
+__pycache__/
+*.pyc
+prisma/prisma/*.db
+logs/*.json
