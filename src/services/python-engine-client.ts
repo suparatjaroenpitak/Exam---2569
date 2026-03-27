@@ -19,6 +19,9 @@ async function callHttp(endpoint: string, payload: unknown) {
       throw new Error(await response.text());
     }
     return await response.json();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Python AI HTTP request failed for ${env.pythonAiUrl}${endpoint}: ${reason}`);
   } finally {
     clearTimeout(timeout);
   }
@@ -45,7 +48,11 @@ function callCli(command: string, payload: unknown) {
 export async function callPythonAi(endpoint: string, cliCommand: string, payload: unknown) {
   try {
     return await callHttp(endpoint, payload);
-  } catch {
+  } catch (httpError) {
+    if (!env.allowPythonCliFallback) {
+      throw httpError;
+    }
+
     return callCli(cliCommand, payload);
   }
 }

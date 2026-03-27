@@ -52,6 +52,8 @@ services:
         generateValue: true
       - key: ENABLE_TRANSFORMER_FALLBACK
         value: "0"
+      - key: ALLOW_PYTHON_CLI_FALLBACK
+        value: "0"
       - key: HUGGINGFACE_API_KEY
         sync: false
       - key: TRANSFORMERS_MODEL

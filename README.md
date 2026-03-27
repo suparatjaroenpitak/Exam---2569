@@ -103,6 +103,7 @@ JWT_SECRET=replace-with-a-long-random-secret
 DATABASE_PROVIDER=sqlite
 DATABASE_URL="file:./prisma/dev.db"
 PYTHON_AI_URL=http://127.0.0.1:8000
+ALLOW_PYTHON_CLI_FALLBACK=1
 ENABLE_TRANSFORMER_FALLBACK=0
 TRANSFORMERS_MODEL=Qwen/Qwen2.5-1.5B-Instruct
 DEFAULT_ADMIN_EMAIL=admin@example.com
@@ -217,6 +218,7 @@ pytest ai_engine/tests -q
 - Next app รับ `DATABASE_URL` จาก Render Postgres โดยตรง
 - Next app รับ `PYTHON_AI_HOSTPORT` จาก AI service ผ่าน private network ของ Render
 - ใน runtime แอปจะประกอบเป็น `http://<host:port>` อัตโนมัติถ้าไม่ได้ตั้ง `PYTHON_AI_URL`
+- ใน production ปิด Python CLI fallback ด้วย `ALLOW_PYTHON_CLI_FALLBACK=0` เพื่อไม่ให้ Next app พยายามรัน `ai_engine/main.py` ภายใน Node container
 
 ค่าที่ Render จะขอให้กรอกเองครั้งแรก:
 
