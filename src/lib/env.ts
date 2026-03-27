@@ -1,9 +1,18 @@
+const configuredPythonAiUrl = process.env.PYTHON_AI_URL || "";
+const privatePythonAiHostport = process.env.PYTHON_AI_HOSTPORT || "";
+const isLocalPythonAiUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(configuredPythonAiUrl);
+const shouldPreferPrivatePythonAiHost = Boolean(privatePythonAiHostport) && (process.env.NODE_ENV === "production" || Boolean(process.env.RENDER)) && isLocalPythonAiUrl;
+
+const resolvedPythonAiUrl = shouldPreferPrivatePythonAiHost
+  ? `http://${privatePythonAiHostport}`
+  : configuredPythonAiUrl || (privatePythonAiHostport ? `http://${privatePythonAiHostport}` : "http://127.0.0.1:8000");
+
 export const env = {
   dataDir: process.env.DATA_DIR || "data",
   jwtSecret: process.env.JWT_SECRET || "development-only-secret-change-me",
   databaseProvider: process.env.DATABASE_PROVIDER || "sqlite",
   databaseUrl: process.env.DATABASE_URL || "file:./prisma/dev.db",
-  pythonAiUrl: process.env.PYTHON_AI_URL || (process.env.PYTHON_AI_HOSTPORT ? `http://${process.env.PYTHON_AI_HOSTPORT}` : "http://127.0.0.1:8000"),
+  pythonAiUrl: resolvedPythonAiUrl,
   allowPythonCliFallback: process.env.ALLOW_PYTHON_CLI_FALLBACK ? process.env.ALLOW_PYTHON_CLI_FALLBACK === "1" : process.env.NODE_ENV !== "production",
   enableTransformerFallback: process.env.ENABLE_TRANSFORMER_FALLBACK === "1",
   huggingFaceApiKey: process.env.HUGGINGFACE_API_KEY || "",
