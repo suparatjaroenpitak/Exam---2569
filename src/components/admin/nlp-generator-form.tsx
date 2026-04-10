@@ -30,7 +30,7 @@ function translateGenerationError(locale: string, message: string) {
   }
 
   if (message.includes("Production AI configuration is invalid")) {
-    return "Production ยังไม่ได้ตั้งค่า Python AI engine ใน Render ให้ใช้งานได้ กรุณาตั้งค่า PYTHON_AI_HOSTPORT ผ่าน Blueprint service discovery หรือกำหนด PYTHON_AI_PUBLIC_URL เป็น public URL จริงของ AI service แล้ว redeploy ใหม่";
+    return "Production ยังไม่พร้อมใช้งาน Python AI engine ตาม config ปัจจุบัน กรุณา redeploy Render ด้วย Docker setup ล่าสุด หรือกำหนด PYTHON_EXEC และ ALLOW_PYTHON_CLI_FALLBACK=1 ให้ service หลักเพื่อให้เรียก ai_engine ภายใน container เดียว";
   }
 
   if (message.includes("Python AI HTTP request failed")) {

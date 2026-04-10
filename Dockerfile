@@ -9,6 +9,7 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY package.json package-lock.json ./
+COPY prisma.config.ts ./prisma.config.ts
 COPY prisma ./prisma
 COPY requirements.txt ./requirements.txt
 COPY ai_engine/requirements.txt ./ai_engine/requirements.txt

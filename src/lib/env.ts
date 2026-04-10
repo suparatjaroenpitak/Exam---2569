@@ -3,6 +3,7 @@ const privatePythonAiHostport = process.env.PYTHON_AI_HOSTPORT || "";
 const publicPythonAiUrl = process.env.PYTHON_AI_PUBLIC_URL || "";
 const isProductionRuntime = process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
 const isRenderRuntime = Boolean(process.env.RENDER);
+const hasPythonExecutable = Boolean(process.env.PYTHON_EXEC);
 const isLocalPythonAiUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(configuredPythonAiUrl);
 
 let resolvedPythonAiUrl = configuredPythonAiUrl;
@@ -25,7 +26,9 @@ export const env = {
   databaseProvider: process.env.DATABASE_PROVIDER || "sqlite",
   databaseUrl: process.env.DATABASE_URL || "file:./prisma/dev.db",
   pythonAiUrl: resolvedPythonAiUrl,
-  allowPythonCliFallback: process.env.ALLOW_PYTHON_CLI_FALLBACK ? process.env.ALLOW_PYTHON_CLI_FALLBACK === "1" : process.env.NODE_ENV !== "production",
+  allowPythonCliFallback: process.env.ALLOW_PYTHON_CLI_FALLBACK
+    ? process.env.ALLOW_PYTHON_CLI_FALLBACK === "1"
+    : (isRenderRuntime && hasPythonExecutable) || process.env.NODE_ENV !== "production",
   enableTransformerFallback: process.env.ENABLE_TRANSFORMER_FALLBACK === "1",
   huggingFaceApiKey: process.env.HUGGINGFACE_API_KEY || "",
   thaiGeneratorBaseUrl: process.env.THAI_GENERATOR_BASE_URL || "https://api-inference.huggingface.co/models",
