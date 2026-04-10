@@ -7,6 +7,7 @@ databases:
 
 services:
   - type: web
+    # If you already created this AI service in Render, keep this name identical to the existing service name.
     name: exam-ai-engine
     runtime: python
     rootDir: ai_engine
@@ -25,7 +26,8 @@ services:
         value: Qwen/Qwen2.5-1.5B-Instruct
 
   - type: web
-    name: online-exam-practice-system
+    # Match the existing production service at https://exam-2569.onrender.com
+    name: exam-2569
     runtime: node
     plan: free
     region: singapore
@@ -48,6 +50,8 @@ services:
           name: exam-ai-engine
           type: web
           property: hostport
+      - key: PYTHON_AI_PUBLIC_URL
+        sync: false
       - key: PYTHON_AI_URL
         sync: false
       - key: JWT_SECRET

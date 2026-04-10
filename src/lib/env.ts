@@ -1,7 +1,6 @@
 const configuredPythonAiUrl = process.env.PYTHON_AI_URL || "";
 const privatePythonAiHostport = process.env.PYTHON_AI_HOSTPORT || "";
-const renderPythonAiServiceName = process.env.PYTHON_AI_SERVICE_NAME || "exam-ai-engine";
-const publicPythonAiUrl = process.env.PYTHON_AI_PUBLIC_URL || `https://${renderPythonAiServiceName}.onrender.com`;
+const publicPythonAiUrl = process.env.PYTHON_AI_PUBLIC_URL || "";
 const isProductionRuntime = process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
 const isLocalPythonAiUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(configuredPythonAiUrl);
 
@@ -10,7 +9,7 @@ let resolvedPythonAiUrl = configuredPythonAiUrl;
 if (isProductionRuntime && (isLocalPythonAiUrl || !configuredPythonAiUrl)) {
   if (privatePythonAiHostport) {
     resolvedPythonAiUrl = `http://${privatePythonAiHostport}`;
-  } else {
+  } else if (publicPythonAiUrl) {
     resolvedPythonAiUrl = publicPythonAiUrl;
   }
 } else if (!resolvedPythonAiUrl) {

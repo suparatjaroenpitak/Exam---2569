@@ -209,7 +209,7 @@ pytest ai_engine/tests -q
 
 โปรเจกต์นี้มี Blueprint สำหรับ Render ใน [render.yaml](render.yaml) ซึ่ง deploy ให้ครบ 3 ส่วน:
 
-1. Next.js app (`online-exam-practice-system`)
+1. Next.js app (`exam-2569`)
 2. FastAPI AI engine (`exam-ai-engine`)
 3. PostgreSQL database (`exam-app-db`)
 
@@ -217,8 +217,8 @@ pytest ai_engine/tests -q
 
 - Next app รับ `DATABASE_URL` จาก Render Postgres โดยตรง
 - Blueprint จะตั้ง `PYTHON_AI_HOSTPORT` จาก service `exam-ai-engine` อัตโนมัติผ่าน Render private network
-- ถ้า production ยังเหลือ `PYTHON_AI_URL=http://localhost...` ระบบจะ fallback ไปที่ `https://exam-ai-engine.onrender.com` โดยอัตโนมัติ หรือใช้ค่าใน `PYTHON_AI_PUBLIC_URL` / `PYTHON_AI_SERVICE_NAME` ถ้ามีการ override
-- ถ้าต้องการบังคับให้เรียกผ่าน public URL แทน internal network ให้ตั้ง `PYTHON_AI_URL` เป็นค่าเช่น `https://exam-ai-engine.onrender.com`
+- ถ้า production ยังเหลือ `PYTHON_AI_URL=http://localhost...` ระบบจะพยายามใช้ `PYTHON_AI_HOSTPORT` ก่อน และจะใช้ `PYTHON_AI_PUBLIC_URL` ก็ต่อเมื่อกำหนดค่าไว้อย่างชัดเจนเท่านั้น
+- ถ้าต้องการบังคับให้เรียกผ่าน public URL แทน internal network ให้ตั้ง `PYTHON_AI_PUBLIC_URL` หรือ `PYTHON_AI_URL` เป็น public URL ที่ถูกต้องของ AI service
 - ใน production ปิด Python CLI fallback ด้วย `ALLOW_PYTHON_CLI_FALLBACK=0` เพื่อไม่ให้ Next app พยายามรัน `ai_engine/main.py` ภายใน Node container
 
 ข้อจำกัดสำคัญของ Render free plan:
@@ -244,9 +244,10 @@ pytest ai_engine/tests -q
 วิธี deploy:
 
 1. Push repo นี้ขึ้น Git provider
-2. ใน Render เลือกสร้าง Blueprint จาก repo
-3. ยืนยันค่าของ env vars ที่เป็น `sync: false`
-4. กด deploy
+2. ถ้า deploy เข้า Render workspace ที่มี service อยู่แล้ว ให้ตรวจว่า `name` ของแต่ละ service ใน [render.yaml](render.yaml) ตรงกับชื่อ service เดิมใน Render Dashboard แบบตัวต่อตัว
+3. ใน Render เลือกสร้าง Blueprint จาก repo
+4. ยืนยันค่าของ env vars ที่เป็น `sync: false`
+5. กด deploy
 
 ถ้าต้องการลดภาระเครื่อง production ให้เปิด `ENABLE_TRANSFORMER_FALLBACK=0` และใช้ rule-based generation เป็น default
 
