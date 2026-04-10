@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .topic_classifier import topic_matches
+try:
+    from .topic_classifier import topic_matches
+except ImportError:
+    from topic_classifier import topic_matches
 
 
 @dataclass

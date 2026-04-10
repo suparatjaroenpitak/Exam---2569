@@ -1,5 +1,4 @@
 import { spawnSync } from "child_process";
-import path from "path";
 
 import { env } from "@/lib/env";
 import { getPythonCommand } from "@/lib/python-runtime";
@@ -37,8 +36,7 @@ async function callHttp(endpoint: string, payload: unknown) {
 
 function callCli(command: string, payload: unknown) {
   const python = getPythonCommand();
-  const scriptPath = path.join(process.cwd(), "ai_engine", "main.py");
-  const result = spawnSync(python.command, [...python.args, scriptPath, command], {
+  const result = spawnSync(python.command, [...python.args, "-m", "ai_engine.main", command], {
     input: JSON.stringify(payload),
     encoding: "utf8",
     maxBuffer: 10 * 1024 * 1024
