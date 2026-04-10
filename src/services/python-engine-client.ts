@@ -4,11 +4,12 @@ import path from "path";
 import { env } from "@/lib/env";
 import { getPythonCommand } from "@/lib/python-runtime";
 
+const isAbsolutePythonAiUrl = /^https?:\/\//i.test(env.pythonAiUrl);
 const isLocalPythonAiUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(env.pythonAiUrl);
 const isProductionRuntime = process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
 
 async function callHttp(endpoint: string, payload: unknown) {
-  if (isProductionRuntime && isLocalPythonAiUrl && !env.allowPythonCliFallback) {
+  if (isProductionRuntime && (!isAbsolutePythonAiUrl || isLocalPythonAiUrl) && !env.allowPythonCliFallback) {
     throw new Error("Production AI configuration is invalid: no reachable AI service URL is configured. On Render production, provide PYTHON_AI_HOSTPORT from service discovery or set PYTHON_AI_PUBLIC_URL to the AI service public URL.");
   }
 
