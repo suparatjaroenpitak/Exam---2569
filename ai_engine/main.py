@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from typing import Any
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 try:
     from .duplicate import is_duplicate, max_similarity
@@ -13,10 +17,16 @@ try:
     from .topic_classifier import classify_topic, topic_matches
     from .validator import validate_question
 except ImportError:
-    from duplicate import is_duplicate, max_similarity
-    from generator import generate_questions
-    from topic_classifier import classify_topic, topic_matches
-    from validator import validate_question
+    try:
+        from ai_engine.duplicate import is_duplicate, max_similarity
+        from ai_engine.generator import generate_questions
+        from ai_engine.topic_classifier import classify_topic, topic_matches
+        from ai_engine.validator import validate_question
+    except ImportError:
+        from duplicate import is_duplicate, max_similarity
+        from generator import generate_questions
+        from topic_classifier import classify_topic, topic_matches
+        from validator import validate_question
 
 
 app = FastAPI(title="Exam AI Engine", version="1.0.0")
