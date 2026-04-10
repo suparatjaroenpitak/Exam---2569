@@ -3,6 +3,7 @@ import { generateWithPythonEngine } from "@/services/python-ai-service";
 import { appendQuestions, buildQuestionHash, loadQuestions } from "@/lib/prisma-db";
 import { appendGenerationLog } from "@/lib/generation-log";
 import { appendImportLog } from "@/lib/import-log";
+import { env } from "@/lib/env";
 
 let isSaving = false;
 
@@ -59,6 +60,7 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   let generated: any[] = [];
   let lastGenerationError: Error | null = null;
   const existingRows = await loadQuestions();
+  const hasRemotePythonValidation = /^https?:\/\//i.test(env.pythonAiUrl);
   const cachedRows = existingRows.filter((row) => row.subject === payload.category && row.subcategory === payload.subcategory && row.difficulty === payload.difficulty);
   const requestedCount = Math.max(1, payload.count);
 
@@ -109,9 +111,11 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   const valid: any[] = [];
   const rejected: any[] = [];
 
-  const existingQuestions = existingRows.map((r) => String(r.question || ""));
+  const relevantExistingRows = existingRows.filter((row) => row.subject === payload.category && row.subcategory === payload.subcategory);
+  const existingQuestions = relevantExistingRows.map((row) => String(row.question || ""));
 
   const exactExistingQuestionKeys = new Set(existingQuestions.map((question) => String(question || "").replace(/\s+/g, " ").trim().toLowerCase()));
+  const acceptedQuestionKeys = new Set<string>();
 
   function normalizedQuestionKey(question: unknown) {
     return String(question || "").replace(/\s+/g, " ").trim().toLowerCase();
@@ -126,62 +130,73 @@ export async function generateAndSave(payload: { category: string; subcategory: 
       return false;
     }
 
-    try {
-      const pyShape = await validateShape({ ...g, topic: payload.subcategory } as any);
-      if ((pyShape === null || !pyShape.valid) && !finalFallback) {
-        rejected.push({ row: g, reason: pyShape ? pyShape.reason : "python-validator-failed" });
-        return false;
-      }
-      if (typeof pyShape?.quality_score === "number") {
-        (g as any).quality_score = pyShape.quality_score;
-      }
-    } catch (e) {
-      // ignore validator fallback here and continue with local heuristics
+    const questionKey = normalizedQuestionKey(g.question);
+    const exactDupAgainstDB = exactExistingQuestionKeys.has(questionKey);
+    const exactDupAgainstBatch = acceptedQuestionKeys.has(questionKey);
+    if (exactDupAgainstDB || exactDupAgainstBatch) {
+      rejected.push({ row: g, reason: "duplicate" });
+      return false;
     }
 
-    let matches = false;
-    try {
-      matches = await topicMatches(String(payload.subcategory), `${g.question}\n${g.choice_a}\n${g.choice_b}\n${g.choice_c}\n${g.choice_d}`);
-      if (!matches && !isFallbackCandidate && !finalFallback) {
-        rejected.push({ row: g, reason: "topic-mismatch" });
-        return false;
+    const minimumQuality = finalFallback ? 55 : isFallbackCandidate ? 65 : 70;
+    const localQuality = computeQualityScore({
+      question: g.question,
+      choice_a: g.choice_a,
+      choice_b: g.choice_b,
+      choice_c: g.choice_c,
+      choice_d: g.choice_d,
+      difficulty: payload.difficulty,
+      topic: String(payload.subcategory)
+    });
+    (g as any).quality_score = typeof g.quality_score === "number" ? g.quality_score : localQuality;
+    if (Number(g.quality_score || 0) < minimumQuality) {
+      rejected.push({ row: g, reason: `low-quality:${Number(g.quality_score || 0)}` });
+      return false;
+    }
+
+    let matches = true;
+    if (hasRemotePythonValidation) {
+      try {
+        const pyShape = await validateShape({ ...g, topic: payload.subcategory } as any);
+        if ((pyShape === null || !pyShape.valid) && !finalFallback) {
+          rejected.push({ row: g, reason: pyShape ? pyShape.reason : "python-validator-failed" });
+          return false;
+        }
+        if (typeof pyShape?.quality_score === "number") {
+          (g as any).quality_score = pyShape.quality_score;
+        }
+      } catch {
+        // continue with local heuristics only
       }
-    } catch (e) {
-      if (!isFallbackCandidate && !finalFallback) {
-        rejected.push({ row: g, reason: "topic-check-failed" });
-        return false;
+
+      try {
+        matches = await topicMatches(String(payload.subcategory), `${g.question}\n${g.choice_a}\n${g.choice_b}\n${g.choice_c}\n${g.choice_d}`);
+        if (!matches && !isFallbackCandidate && !finalFallback) {
+          rejected.push({ row: g, reason: "topic-mismatch" });
+          return false;
+        }
+      } catch {
+        if (!isFallbackCandidate && !finalFallback) {
+          rejected.push({ row: g, reason: "topic-check-failed" });
+          return false;
+        }
       }
     }
 
     let duplicate = false;
-    try {
-      const questionKey = normalizedQuestionKey(g.question);
-      const exactDupAgainstDB = exactExistingQuestionKeys.has(questionKey);
-      const exactDupAgainstBatch = valid.some((v) => normalizedQuestionKey(v.question) === questionKey);
-      const dupAgainstDB = finalFallback ? exactDupAgainstDB : await isDuplicate(g.question, existingQuestions, 0.85);
-      const dupAgainstBatch = finalFallback ? exactDupAgainstBatch : await isDuplicate(g.question, valid.map((v) => v.question || ""), 0.85);
-      duplicate = dupAgainstDB || dupAgainstBatch;
-      if (duplicate) {
-        rejected.push({ row: g, reason: "duplicate" });
+    if (hasRemotePythonValidation && !finalFallback) {
+      try {
+        const dupAgainstDB = await isDuplicate(g.question, existingQuestions, 0.85);
+        const dupAgainstBatch = valid.length > 0 ? await isDuplicate(g.question, valid.map((v) => v.question || ""), 0.85) : false;
+        duplicate = dupAgainstDB || dupAgainstBatch;
+        if (duplicate) {
+          rejected.push({ row: g, reason: "duplicate" });
+          return false;
+        }
+      } catch {
+        rejected.push({ row: g, reason: "duplicate-check-failed" });
         return false;
       }
-    } catch (e) {
-      rejected.push({ row: g, reason: "duplicate-check-failed" });
-      return false;
-    }
-
-    try {
-      const qscore = typeof g.quality_score === "number"
-        ? g.quality_score
-        : computeQualityScore({ question: g.question, choice_a: g.choice_a, choice_b: g.choice_b, choice_c: g.choice_c, choice_d: g.choice_d, difficulty: payload.difficulty, topic: String(payload.subcategory) });
-      (g as any).quality_score = qscore;
-      const minimumQuality = finalFallback ? 55 : isFallbackCandidate ? 65 : 70;
-      if (qscore < minimumQuality) {
-        rejected.push({ row: g, reason: `low-quality:${qscore}` });
-        return false;
-      }
-    } catch (e) {
-      (g as any).quality_score = 50;
     }
 
     const prepared = {
@@ -218,6 +233,7 @@ export async function generateAndSave(payload: { category: string; subcategory: 
       correct_answer: prepared.correct_answer
     });
     valid.push(prepared);
+    acceptedQuestionKeys.add(questionKey);
     return true;
   }
 
