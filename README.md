@@ -217,6 +217,7 @@ pytest ai_engine/tests -q
 
 - Next app รับ `DATABASE_URL` จาก Render Postgres โดยตรง
 - Blueprint จะตั้ง `PYTHON_AI_HOSTPORT` จาก service `exam-ai-engine` อัตโนมัติผ่าน Render private network
+- ถ้า production ยังเหลือ `PYTHON_AI_URL=http://localhost...` ระบบจะ fallback ไปที่ `https://exam-ai-engine.onrender.com` โดยอัตโนมัติ หรือใช้ค่าใน `PYTHON_AI_PUBLIC_URL` / `PYTHON_AI_SERVICE_NAME` ถ้ามีการ override
 - ถ้าต้องการบังคับให้เรียกผ่าน public URL แทน internal network ให้ตั้ง `PYTHON_AI_URL` เป็นค่าเช่น `https://exam-ai-engine.onrender.com`
 - ใน production ปิด Python CLI fallback ด้วย `ALLOW_PYTHON_CLI_FALLBACK=0` เพื่อไม่ให้ Next app พยายามรัน `ai_engine/main.py` ภายใน Node container
 
