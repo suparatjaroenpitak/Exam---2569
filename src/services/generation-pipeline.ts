@@ -116,9 +116,28 @@ export async function generateAndSave(payload: { category: string; subcategory: 
 
   const exactExistingQuestionKeys = new Set(existingQuestions.map((question) => String(question || "").replace(/\s+/g, " ").trim().toLowerCase()));
   const acceptedQuestionKeys = new Set<string>();
+  const existingAnswerPatternKeys = new Set(
+    relevantExistingRows.map((row) => [
+      String(row.explanation || "").replace(/\s+/g, " ").trim().toLowerCase(),
+      [row.choice_a, row.choice_b, row.choice_c, row.choice_d]
+        .map((choice) => String(choice || "").replace(/\s+/g, " ").trim().toLowerCase())
+        .sort()
+        .join("||")
+    ].join("::"))
+  );
+  const acceptedAnswerPatternKeys = new Set<string>();
 
   function normalizedQuestionKey(question: unknown) {
     return String(question || "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  function answerPatternKey(candidate: any) {
+    const explanation = String(candidate?.explanation || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const choices = [candidate?.choice_a, candidate?.choice_b, candidate?.choice_c, candidate?.choice_d]
+      .map((choice) => String(choice || "").replace(/\s+/g, " ").trim().toLowerCase())
+      .sort()
+      .join("||");
+    return [explanation, choices].join("::");
   }
 
   async function tryAcceptCandidate(g: any, options?: { finalFallback?: boolean }): Promise<boolean> {
@@ -133,7 +152,9 @@ export async function generateAndSave(payload: { category: string; subcategory: 
     const questionKey = normalizedQuestionKey(g.question);
     const exactDupAgainstDB = exactExistingQuestionKeys.has(questionKey);
     const exactDupAgainstBatch = acceptedQuestionKeys.has(questionKey);
-    if (exactDupAgainstDB || exactDupAgainstBatch) {
+    const patternKey = answerPatternKey(g);
+    const repeatedAnswerPattern = existingAnswerPatternKeys.has(patternKey) || acceptedAnswerPatternKeys.has(patternKey);
+    if (exactDupAgainstDB || exactDupAgainstBatch || repeatedAnswerPattern) {
       rejected.push({ row: g, reason: "duplicate" });
       return false;
     }
@@ -234,6 +255,7 @@ export async function generateAndSave(payload: { category: string; subcategory: 
     });
     valid.push(prepared);
     acceptedQuestionKeys.add(questionKey);
+    acceptedAnswerPatternKeys.add(patternKey);
     return true;
   }
 
