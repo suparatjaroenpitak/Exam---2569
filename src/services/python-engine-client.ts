@@ -9,7 +9,7 @@ const isProductionRuntime = process.env.NODE_ENV === "production" || Boolean(pro
 
 async function callHttp(endpoint: string, payload: unknown) {
   if (isProductionRuntime && isLocalPythonAiUrl && !env.allowPythonCliFallback) {
-    throw new Error("Production AI configuration is invalid: PYTHON_AI_URL points to localhost. On Render free web services, use the AI service public URL such as https://<ai-service>.onrender.com.");
+    throw new Error("Production AI configuration is invalid: PYTHON_AI_URL points to localhost. Set PYTHON_AI_URL to the AI service public URL, or provide PYTHON_AI_HOSTPORT from Render service discovery.");
   }
 
   const controller = new AbortController();

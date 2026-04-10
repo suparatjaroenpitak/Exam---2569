@@ -216,7 +216,8 @@ pytest ai_engine/tests -q
 การเชื่อมต่อระหว่าง services:
 
 - Next app รับ `DATABASE_URL` จาก Render Postgres โดยตรง
-- Next app ควรตั้ง `PYTHON_AI_URL` เป็น public URL ของ AI service เช่น `https://exam-ai-engine.onrender.com`
+- Blueprint จะตั้ง `PYTHON_AI_HOSTPORT` จาก service `exam-ai-engine` อัตโนมัติผ่าน Render private network
+- ถ้าต้องการบังคับให้เรียกผ่าน public URL แทน internal network ให้ตั้ง `PYTHON_AI_URL` เป็นค่าเช่น `https://exam-ai-engine.onrender.com`
 - ใน production ปิด Python CLI fallback ด้วย `ALLOW_PYTHON_CLI_FALLBACK=0` เพื่อไม่ให้ Next app พยายามรัน `ai_engine/main.py` ภายใน Node container
 
 ข้อจำกัดสำคัญของ Render free plan:
@@ -252,3 +253,13 @@ pytest ai_engine/tests -q
 
 - Blueprint นี้ใช้ `plan: free` สำหรับ web services ตาม config ปัจจุบัน
 - Render Postgres plan ไม่ถูก fix ไว้ในไฟล์นี้ เพื่อให้เลือกตาม workspace/สิทธิ์ที่มีอยู่ได้ตอนสร้าง resource
+
+
+user admin ไว้สร้างข้อสอบ ครับ
+
+- Email: `admin@example.com`
+- Password: `Admin12345!`
+
+ิเว็บ 
+
+https://exam-2569.onrender.com/login
