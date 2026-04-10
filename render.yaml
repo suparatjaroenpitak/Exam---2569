@@ -7,38 +7,16 @@ databases:
 
 services:
   - type: web
-    # If you already created this AI service in Render, keep this name identical to the existing service name.
-    name: exam-ai-engine
-    runtime: python
-    rootDir: ai_engine
+    # Single-service deployment: Next.js app and Python CLI fallback run in one Docker container.
+    name: Exam---2569
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: free
     region: singapore
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    autoDeployTrigger: commit
-    healthCheckPath: /health
-    envVars:
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: ENABLE_TRANSFORMER_FALLBACK
-        value: "0"
-      - key: TRANSFORMERS_MODEL
-        value: Qwen/Qwen2.5-1.5B-Instruct
-
-  - type: web
-    # Match the existing production service at https://exam-2569.onrender.com
-    name: exam-2569
-    runtime: node
-    plan: free
-    region: singapore
-    buildCommand: python3 -m pip install --upgrade pip setuptools wheel && python3 -m pip install -r requirements.txt && npm install && npx prisma generate && npm run build
-    preDeployCommand: npx prisma migrate deploy
-    startCommand: npm run start
     autoDeployTrigger: commit
     healthCheckPath: /login
     envVars:
-      - key: NODE_VERSION
-        value: 22
       - key: DATABASE_PROVIDER
         value: postgresql
       - key: DATABASE_URL
@@ -47,16 +25,8 @@ services:
           property: connectionString
       - key: PYTHON_EXEC
         value: python3
-      - key: PYTHON_AI_HOSTPORT
-        fromService:
-          name: exam-ai-engine
-          type: web
-          property: hostport
-      - key: PYTHON_AI_PUBLIC_URL
-        fromService:
-          name: exam-ai-engine
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+      - key: PYTHONUNBUFFERED
+        value: "1"
       - key: JWT_SECRET
         generateValue: true
       - key: ENABLE_TRANSFORMER_FALLBACK

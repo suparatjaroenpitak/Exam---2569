@@ -1,0 +1,13 @@
+.git
+.github
+.next
+node_modules
+npm-debug.log
+logs
+coverage
+dist
+build
+*.local
+.env
+.env.*
+!.env.example

@@ -36,25 +36,23 @@ Validation pipeline:
 2. topic check
 3. duplicate check
 4. choice check
-5. quality score
+โปรเจกต์นี้มี Blueprint สำหรับ Render ใน [render.yaml](render.yaml) ซึ่ง deploy แบบ service เดียวดังนี้:
 6. save
 
-## AI Engine
-
+2. PostgreSQL database (`exam-app-db`)
 ไฟล์หลักของ Python engine:
 
 - [ai_engine/main.py](ai_engine/main.py)
 - [ai_engine/generator.py](ai_engine/generator.py)
-- [ai_engine/validator.py](ai_engine/validator.py)
-- [ai_engine/duplicate.py](ai_engine/duplicate.py)
-- [ai_engine/topic_classifier.py](ai_engine/topic_classifier.py)
-
-สิ่งที่ใช้จาก PyThaiNLP:
+- บน Render ระบบจะรัน Next.js และ Python runtime อยู่ใน Docker container เดียวกัน
+- การสร้างข้อสอบใน production ใช้ Python CLI fallback ภายใน container เดียว โดยเรียก `ai_engine/main.py` ผ่าน `python3`
+- local development จะใช้ `PYTHON_AI_URL=http://127.0.0.1:8000` ตามปกติ และถ้า AI server ไม่พร้อมยังมี CLI fallback ได้เมื่อ `ALLOW_PYTHON_CLI_FALLBACK=1`
+- ใน config ปัจจุบันของ Render เปิด `ALLOW_PYTHON_CLI_FALLBACK=1` และกำหนด `PYTHON_EXEC=python3` ไว้แล้ว
 
 - `word_tokenize`
 - `sent_tokenize`
-- `normalize`
-- stopword corpus สำหรับ keyword extraction แบบ rule-based
+- ไม่ต้องสร้าง AI service แยก ถ้าใช้ Docker image เดียวแบบใน Blueprint นี้
+- ตัว container ต้อง build ผ่านทั้ง Node.js และ Python dependencies จึงจะใช้งาน generation ได้
 
 หลักการ generate:
 
@@ -64,20 +62,18 @@ Validation pipeline:
 - topic กฎหมายมี keyword mapping ชัดเจนตามหัวข้อที่กำหนด
 
 Duplicate detection:
-
-- TF-IDF + cosine similarity
-- ถ้า similarity > 0.85 จะ reject และ regenerate/top-up
-
-Quality score:
-
+- build Docker image จาก [Dockerfile](Dockerfile)
+- ติดตั้ง Node.js และ Python dependencies ภายใน container เดียว
+- รัน `npx prisma migrate deploy` ตอน container start ผ่าน [scripts/render-start.sh](scripts/render-start.sh)
+- รัน Next.js production server พร้อม Python CLI fallback ใน container เดียว
 - clarity
 - topic relevance
 - difficulty
 - answer correctness
-
-ต่ำกว่า 70 จะไม่ถูกบันทึกเป็นข้อสอบผ่านคุณภาพ
-
-## Database Setup
+2. ถ้า deploy เข้า Render workspace ที่มี service อยู่แล้ว ให้ตรวจว่า `name` ใน [render.yaml](render.yaml) ตรงกับชื่อ service เดิมใน Render Dashboard
+3. ใน Render เลือกสร้าง Blueprint จาก repo
+4. ยืนยันค่าของ env vars ที่เป็น `sync: false`
+5. กด deploy
 
 Prisma schema อยู่ที่ [prisma/schema.prisma](prisma/schema.prisma)
 
