@@ -54,6 +54,14 @@ function callCli(command: string, payload: unknown) {
 }
 
 export async function callPythonAi(endpoint: string, cliCommand: string, payload: unknown) {
+  if (!isAbsolutePythonAiUrl) {
+    if (!env.allowPythonCliFallback) {
+      throw new Error("Production AI configuration is invalid: no reachable AI service URL is configured. On Render production, provide PYTHON_AI_HOSTPORT from service discovery or set PYTHON_AI_PUBLIC_URL to the AI service public URL.");
+    }
+
+    return callCli(cliCommand, payload);
+  }
+
   try {
     return await callHttp(endpoint, payload);
   } catch (httpError) {

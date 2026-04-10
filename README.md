@@ -216,19 +216,20 @@ pytest ai_engine/tests -q
 การเชื่อมต่อระหว่าง services:
 
 - Next app รับ `DATABASE_URL` จาก Render Postgres โดยตรง
-- Blueprint จะตั้ง `PYTHON_AI_PUBLIC_URL` จากค่า `RENDER_EXTERNAL_URL` ของ service `exam-ai-engine` อัตโนมัติ ทำให้ production เรียก AI service ได้โดยไม่ต้องเดา URL เอง
+- Blueprint จะตั้ง `PYTHON_AI_PUBLIC_URL` จากค่า `RENDER_EXTERNAL_URL` ของ service `exam-ai-engine` อัตโนมัติ และบน Render runtime ระบบจะใช้ค่านี้ก่อนเสมอ
 - Blueprint จะตั้ง `PYTHON_AI_HOSTPORT` จาก service `exam-ai-engine` ไว้เป็น fallback ผ่าน Render private network
 - local development จะใช้ `PYTHON_AI_URL=http://127.0.0.1:8000` ตามปกติ และถ้า AI server ไม่พร้อมยังมี CLI fallback ได้เมื่อ `ALLOW_PYTHON_CLI_FALLBACK=1`
-- ถ้าต้องการ override production เป็น URL อื่น ให้ตั้ง `PYTHON_AI_PUBLIC_URL` หรือ `PYTHON_AI_URL` เป็น public URL ที่ถูกต้องของ AI service
-- ใน production ปิด Python CLI fallback ด้วย `ALLOW_PYTHON_CLI_FALLBACK=0` เพื่อไม่ให้ Next app พยายามรัน `ai_engine/main.py` ภายใน Node container
+- ถ้า deploy บน Render เป็น service เดียวที่รัน Next.js อย่างเดียว ระบบจะ fallback ไปเรียก Python CLI ภายใน service เดียวกัน โดยใช้ `python3` และ dependencies จาก `requirements.txt`
+- ถ้าต้องการ override production เป็น URL อื่น ให้ตั้ง `PYTHON_AI_PUBLIC_URL` เป็น public URL ที่ถูกต้องของ AI service
+- ใน config ปัจจุบันของ Render เปิด `ALLOW_PYTHON_CLI_FALLBACK=1` เพื่อรองรับกรณีมีเพียง service เดียวและยังไม่ได้แยก AI service ออกมา
 
 ข้อจำกัดสำคัญของ Render free plan:
 
 - ใช้ public URL ของ AI service เป็นเส้นทางหลัก และเก็บ `hostport` เป็น fallback เท่านั้น
+- ถ้ายังไม่มี AI service แยก สามารถใช้ Python CLI fallback ภายใน Node service ได้ แต่ build ของ service นั้นต้องติดตั้ง Python dependencies ให้ครบ
 
 ค่าที่ Render จะขอให้กรอกเองครั้งแรก:
 
-- `PYTHON_AI_URL`
 - `HUGGINGFACE_API_KEY`
 - `DEFAULT_ADMIN_EMAIL`
 - `DEFAULT_ADMIN_PASSWORD`
@@ -237,6 +238,7 @@ pytest ai_engine/tests -q
 
 - รัน `npx prisma generate` ตอน build ของ Next.js app
 - รัน `npx prisma migrate deploy` ก่อน start app
+- ติดตั้ง Python dependencies ผ่าน `python3 -m pip install -r requirements.txt` ใน service หลัก เพื่อให้ CLI fallback ใช้งานได้
 - build AI engine จากโฟลเดอร์ `ai_engine` โดยตรง
 - ติดตั้ง Python dependencies จาก `ai_engine/requirements.txt`
 - ผูก app เข้ากับ database และ AI engine อัตโนมัติ

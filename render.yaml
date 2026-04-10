@@ -31,7 +31,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: python3 -m pip install --upgrade pip setuptools wheel && python3 -m pip install -r requirements.txt && npm install && npx prisma generate && npm run build
     preDeployCommand: npx prisma migrate deploy
     startCommand: npm run start
     autoDeployTrigger: commit
@@ -45,6 +45,8 @@ services:
         fromDatabase:
           name: exam-app-db
           property: connectionString
+      - key: PYTHON_EXEC
+        value: python3
       - key: PYTHON_AI_HOSTPORT
         fromService:
           name: exam-ai-engine
@@ -55,14 +57,12 @@ services:
           name: exam-ai-engine
           type: web
           envVarKey: RENDER_EXTERNAL_URL
-      - key: PYTHON_AI_URL
-        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: ENABLE_TRANSFORMER_FALLBACK
         value: "0"
       - key: ALLOW_PYTHON_CLI_FALLBACK
-        value: "0"
+        value: "1"
       - key: HUGGINGFACE_API_KEY
         sync: false
       - key: TRANSFORMERS_MODEL

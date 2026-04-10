@@ -2,11 +2,14 @@ const configuredPythonAiUrl = process.env.PYTHON_AI_URL || "";
 const privatePythonAiHostport = process.env.PYTHON_AI_HOSTPORT || "";
 const publicPythonAiUrl = process.env.PYTHON_AI_PUBLIC_URL || "";
 const isProductionRuntime = process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
+const isRenderRuntime = Boolean(process.env.RENDER);
 const isLocalPythonAiUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(configuredPythonAiUrl);
 
 let resolvedPythonAiUrl = configuredPythonAiUrl;
 
-if (isProductionRuntime && (isLocalPythonAiUrl || !configuredPythonAiUrl)) {
+if (isRenderRuntime && publicPythonAiUrl) {
+  resolvedPythonAiUrl = publicPythonAiUrl;
+} else if (isProductionRuntime && (isLocalPythonAiUrl || !configuredPythonAiUrl)) {
   if (publicPythonAiUrl) {
     resolvedPythonAiUrl = publicPythonAiUrl;
   } else if (privatePythonAiHostport) {
