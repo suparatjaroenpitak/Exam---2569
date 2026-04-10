@@ -51,7 +51,10 @@ services:
           type: web
           property: hostport
       - key: PYTHON_AI_PUBLIC_URL
-        sync: false
+        fromService:
+          name: exam-ai-engine
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
       - key: PYTHON_AI_URL
         sync: false
       - key: JWT_SECRET

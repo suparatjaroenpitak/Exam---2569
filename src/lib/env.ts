@@ -7,10 +7,10 @@ const isLocalPythonAiUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(c
 let resolvedPythonAiUrl = configuredPythonAiUrl;
 
 if (isProductionRuntime && (isLocalPythonAiUrl || !configuredPythonAiUrl)) {
-  if (privatePythonAiHostport) {
-    resolvedPythonAiUrl = `http://${privatePythonAiHostport}`;
-  } else if (publicPythonAiUrl) {
+  if (publicPythonAiUrl) {
     resolvedPythonAiUrl = publicPythonAiUrl;
+  } else if (privatePythonAiHostport) {
+    resolvedPythonAiUrl = `http://${privatePythonAiHostport}`;
   }
 } else if (!resolvedPythonAiUrl) {
   resolvedPythonAiUrl = privatePythonAiHostport ? `http://${privatePythonAiHostport}` : "http://127.0.0.1:8000";

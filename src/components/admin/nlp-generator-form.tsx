@@ -24,6 +24,22 @@ type GenerationJobResponse = {
   error?: string;
 };
 
+function translateGenerationError(locale: string, message: string) {
+  if (locale !== "th") {
+    return message;
+  }
+
+  if (message.includes("Production AI configuration is invalid")) {
+    return "Production ยังไม่ได้ตั้งค่า Python AI engine ใน Render ให้ใช้งานได้ กรุณาตั้งค่า PYTHON_AI_HOSTPORT ผ่าน Blueprint service discovery หรือกำหนด PYTHON_AI_PUBLIC_URL เป็น public URL จริงของ AI service แล้ว redeploy ใหม่";
+  }
+
+  if (message.includes("Python AI HTTP request failed")) {
+    return `เรียก Python AI engine ไม่สำเร็จ: ${message}`;
+  }
+
+  return message;
+}
+
 function translateStage(locale: string, stage: string, fallback: string) {
   if (locale !== "th") {
     return fallback;
@@ -118,7 +134,11 @@ export function NlpGeneratorForm() {
       setProgress(0);
       setProgressLabel(null);
       setProgressDetail(null);
-      setError(requestError instanceof Error ? requestError.message : translate("message.generation-failed"));
+      setError(
+        requestError instanceof Error
+          ? translateGenerationError(locale, requestError.message)
+          : translate("message.generation-failed")
+      );
     } finally {
       setLoading(false);
     }

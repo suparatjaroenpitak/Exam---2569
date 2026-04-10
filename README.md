@@ -216,15 +216,15 @@ pytest ai_engine/tests -q
 การเชื่อมต่อระหว่าง services:
 
 - Next app รับ `DATABASE_URL` จาก Render Postgres โดยตรง
-- Blueprint จะตั้ง `PYTHON_AI_HOSTPORT` จาก service `exam-ai-engine` อัตโนมัติผ่าน Render private network
-- ถ้า production ยังเหลือ `PYTHON_AI_URL=http://localhost...` ระบบจะพยายามใช้ `PYTHON_AI_HOSTPORT` ก่อน และจะใช้ `PYTHON_AI_PUBLIC_URL` ก็ต่อเมื่อกำหนดค่าไว้อย่างชัดเจนเท่านั้น
-- ถ้าต้องการบังคับให้เรียกผ่าน public URL แทน internal network ให้ตั้ง `PYTHON_AI_PUBLIC_URL` หรือ `PYTHON_AI_URL` เป็น public URL ที่ถูกต้องของ AI service
+- Blueprint จะตั้ง `PYTHON_AI_PUBLIC_URL` จากค่า `RENDER_EXTERNAL_URL` ของ service `exam-ai-engine` อัตโนมัติ ทำให้ production เรียก AI service ได้โดยไม่ต้องเดา URL เอง
+- Blueprint จะตั้ง `PYTHON_AI_HOSTPORT` จาก service `exam-ai-engine` ไว้เป็น fallback ผ่าน Render private network
+- local development จะใช้ `PYTHON_AI_URL=http://127.0.0.1:8000` ตามปกติ และถ้า AI server ไม่พร้อมยังมี CLI fallback ได้เมื่อ `ALLOW_PYTHON_CLI_FALLBACK=1`
+- ถ้าต้องการ override production เป็น URL อื่น ให้ตั้ง `PYTHON_AI_PUBLIC_URL` หรือ `PYTHON_AI_URL` เป็น public URL ที่ถูกต้องของ AI service
 - ใน production ปิด Python CLI fallback ด้วย `ALLOW_PYTHON_CLI_FALLBACK=0` เพื่อไม่ให้ Next app พยายามรัน `ai_engine/main.py` ภายใน Node container
 
 ข้อจำกัดสำคัญของ Render free plan:
 
-- free web services ส่ง request ผ่าน private network ได้ แต่รับ private-network traffic ไม่ได้
-- ดังนั้นถ้า AI engine ยังเป็น `type: web` และ `plan: free` ให้ใช้ public URL ของ AI service แทน `hostport`
+- ใช้ public URL ของ AI service เป็นเส้นทางหลัก และเก็บ `hostport` เป็น fallback เท่านั้น
 
 ค่าที่ Render จะขอให้กรอกเองครั้งแรก:
 
