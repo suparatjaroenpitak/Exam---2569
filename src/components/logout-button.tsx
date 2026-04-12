@@ -30,7 +30,7 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={loading}
-      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-900 hover:text-slate-900 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-300 dark:hover:text-white"
+      className="theme-button-secondary rounded-full px-4 py-2 text-sm font-semibold"
     >
       {loading ? translate("nav.logging-out") : translate("nav.logout")}
     </button>

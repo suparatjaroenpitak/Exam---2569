@@ -7,15 +7,15 @@ export function PreferenceControls() {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/70">
-        <span className="text-slate-500 dark:text-slate-300">{translate("toggle.language")}</span>
+      <div className="theme-card-soft flex items-center gap-2 rounded-full px-3 py-2 text-sm">
+        <span className="text-xs text-white/68">{translate("toggle.language")}</span>
         <button
           type="button"
           onClick={() => setLocale("th")}
           className={`rounded-full px-3 py-1 font-medium transition ${
             locale === "th"
-              ? "bg-slate-950 text-white dark:bg-amber-300 dark:text-slate-950"
-              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              ? "theme-button-primary text-xs font-semibold"
+              : "theme-button-secondary text-xs font-semibold"
           }`}
         >
           TH
@@ -25,23 +25,23 @@ export function PreferenceControls() {
           onClick={() => setLocale("en")}
           className={`rounded-full px-3 py-1 font-medium transition ${
             locale === "en"
-              ? "bg-slate-950 text-white dark:bg-amber-300 dark:text-slate-950"
-              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              ? "theme-button-primary text-xs font-semibold"
+              : "theme-button-secondary text-xs font-semibold"
           }`}
         >
           EN
         </button>
       </div>
 
-      <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/70">
-        <span className="text-slate-500 dark:text-slate-300">{translate("toggle.theme")}</span>
+      <div className="theme-card-soft flex items-center gap-2 rounded-full px-3 py-2 text-sm">
+        <span className="text-xs text-white/68">{translate("toggle.theme")}</span>
         <button
           type="button"
           onClick={() => setTheme("light")}
           className={`rounded-full px-3 py-1 font-medium transition ${
             theme === "light"
-              ? "bg-amber-100 text-amber-950"
-              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              ? "theme-button-primary text-xs font-semibold"
+              : "theme-button-secondary text-xs font-semibold"
           }`}
         >
           {translate("theme.light")}
@@ -51,8 +51,8 @@ export function PreferenceControls() {
           onClick={() => setTheme("dark")}
           className={`rounded-full px-3 py-1 font-medium transition ${
             theme === "dark"
-              ? "bg-slate-950 text-white dark:bg-slate-700"
-              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              ? "theme-button-primary text-xs font-semibold"
+              : "theme-button-secondary text-xs font-semibold"
           }`}
         >
           {translate("theme.dark")}

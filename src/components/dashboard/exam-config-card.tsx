@@ -31,19 +31,19 @@ export function ExamConfigCard() {
   }
 
   return (
-    <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+    <section className="theme-card rounded-[2rem] p-6">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("dashboard.start-practice")}</p>
-          <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("dashboard.build-exam")}</h3>
+          <p className="theme-kicker text-xs font-semibold">{translate("dashboard.start-practice")}</p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{translate("dashboard.build-exam")}</h3>
         </div>
-        <div className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white dark:bg-amber-300 dark:text-slate-950">{translate("dashboard.one-question-minute")}</div>
+        <div className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#2148c0] shadow-[0_18px_40px_rgba(5,13,42,0.28)]">{translate("dashboard.one-question-minute")}</div>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.category")}</span>
+          <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.category")}</span>
           <select
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
             value={category}
             onChange={(event) => {
               const nextCategory = event.target.value as ExamCategory;
@@ -59,9 +59,9 @@ export function ExamConfigCard() {
           </select>
         </label>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.subcategory")}</span>
+          <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.subcategory")}</span>
           <select
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
             value={subcategory}
             onChange={(event) => setSubcategory(event.target.value as ExamSubcategory | "all")}
           >
@@ -74,9 +74,9 @@ export function ExamConfigCard() {
           </select>
         </label>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.questions")}</span>
+          <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.questions")}</span>
           <select
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
             value={count}
               onChange={(event) => setCount(event.target.value)}
           >
@@ -89,9 +89,9 @@ export function ExamConfigCard() {
           </select>
         </label>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.difficulty-focus")}</span>
+          <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.difficulty-focus")}</span>
           <select
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
             value={difficulty}
             onChange={(event) => setDifficulty(event.target.value as QuestionDifficulty)}
           >
@@ -106,7 +106,7 @@ export function ExamConfigCard() {
       <button
         type="button"
         onClick={startExam}
-        className="mt-6 rounded-2xl bg-ember px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sand"
+        className="theme-button-primary mt-6 rounded-2xl px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em]"
       >
         {translate("dashboard.start-exam")}
       </button>

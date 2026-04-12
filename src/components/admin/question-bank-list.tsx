@@ -81,24 +81,24 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
   const allFilteredIds = useMemo(() => filtered.map((q) => q.id), [filtered]);
 
   return (
-    <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+    <section className="theme-card rounded-[2rem] p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("admin.question-bank-list")}</p>
-          <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("admin.question-bank-list-title")}</h3>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{filtered.length} / {questions.length}</p>
+          <p className="theme-kicker text-xs font-semibold">{translate("admin.question-bank-list")}</p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{translate("admin.question-bank-list-title")}</h3>
+          <p className="mt-2 text-sm text-white/72">{filtered.length} / {questions.length}</p>
         </div>
         <div className="grid gap-3 md:grid-cols-[1.6fr_1fr]">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={translate("admin.search-questions")}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="theme-input w-full rounded-2xl px-4 py-3 text-sm"
           />
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value as ExamCategory | "all")}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
           >
             <option value="all">{translate("common.all")}</option>
             {EXAM_CATEGORIES.map((item) => (
@@ -112,18 +112,18 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
 
       <div className="mt-6 space-y-4">
         <div className="flex items-center justify-end gap-2">
-          <button type="button" onClick={selectAllFiltered} className="rounded px-3 py-2 text-sm bg-slate-100">Select all</button>
-          <button type="button" onClick={clearSelection} className="rounded px-3 py-2 text-sm bg-slate-50">Clear selection</button>
-          <button type="button" onClick={deleteSelected} className="rounded px-3 py-2 text-sm bg-rose-500 text-white">Delete selected</button>
-          <button type="button" onClick={clearAll} className="rounded px-3 py-2 text-sm bg-red-700 text-white">Clear all</button>
+          <button type="button" onClick={selectAllFiltered} className="theme-button-secondary rounded-xl px-3 py-2 text-sm font-medium">Select all</button>
+          <button type="button" onClick={clearSelection} className="theme-button-secondary rounded-xl px-3 py-2 text-sm font-medium">Clear selection</button>
+          <button type="button" onClick={deleteSelected} className="theme-button-alert rounded-xl px-3 py-2 text-sm font-medium">Delete selected</button>
+          <button type="button" onClick={clearAll} className="theme-button-danger rounded-xl px-3 py-2 text-sm font-medium">Clear all</button>
         </div>
         {filtered.map((question, index) => (
-          <article key={question.id} className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+          <article key={question.id} className="theme-card-soft rounded-2xl p-5">
             <div className="mb-2">
-              <input type="checkbox" checked={!!selected[question.id]} onChange={() => toggleSelect(question.id)} />
+              <input className="h-4 w-4 accent-white" type="checkbox" checked={!!selected[question.id]} onChange={() => toggleSelect(question.id)} />
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em]">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-300">{translate("exam.question")} {index + 1}</span>
+              <span className="theme-tag rounded-full px-3 py-1">{translate("exam.question")} {index + 1}</span>
               <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">{getCategoryLabel(locale, question.subject)}</span>
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">{getSubcategoryLabel(locale, question.subcategory)}</span>
               {question.model_subcategory ? (
@@ -144,7 +144,7 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">Quality Passed</span>
               ) : null}
             </div>
-            <h4 className="mt-4 text-lg font-semibold text-slate-950 dark:text-slate-100">{question.question}</h4>
+            <h4 className="mt-4 text-lg font-semibold text-white">{question.question}</h4>
             <div className="mt-4 grid gap-2 md:grid-cols-2">
               {[
                 ["A", question.choice_a],
@@ -152,19 +152,19 @@ export function QuestionBankList({ questions }: { questions: QuestionRecord[] })
                 ["C", question.choice_c],
                 ["D", question.choice_d]
               ].map(([label, value]) => (
-                <div key={`${question.id}-${label}`} className={`rounded-2xl px-4 py-3 text-sm ${question.correct_answer === label ? "bg-emerald-50 text-emerald-900" : "bg-slate-50 text-slate-700 dark:bg-slate-900 dark:text-slate-200"}`}>
+                <div key={`${question.id}-${label}`} className={`rounded-2xl px-4 py-3 text-sm ${question.correct_answer === label ? "bg-emerald-500/20 text-emerald-100" : "border border-white/10 bg-white/[0.06] text-white/82"}`}>
                   <span className="font-semibold">{label}.</span> {value}
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-sm text-slate-700 dark:text-slate-200">
-              {translate("exam.correct-answer")}: <span className="font-semibold text-accent">{question.correct_answer || "Answer not available"}</span>
+            <p className="mt-4 text-sm text-white/82">
+              {translate("exam.correct-answer")}: <span className="font-semibold text-[#dbe6ff]">{question.correct_answer || "Answer not available"}</span>
             </p>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{translate("exam.explanation")}: {question.explanation}</p>
+            <p className="mt-2 text-sm text-white/66">{translate("exam.explanation")}: {question.explanation}</p>
           </article>
         ))}
         {filtered.length === 0 ? (
-          <p className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">{translate("admin.no-questions-found")}</p>
+          <p className="theme-card-soft rounded-2xl px-4 py-4 text-sm text-white/72">{translate("admin.no-questions-found")}</p>
         ) : null}
       </div>
     </section>

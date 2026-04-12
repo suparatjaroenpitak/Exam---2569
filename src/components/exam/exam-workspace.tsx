@@ -65,21 +65,21 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
   return (
     <div className="space-y-6">
       {!session ? (
-        <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+        <section className="theme-card rounded-[2rem] p-6">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("exam.builder")}</p>
-              <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("exam.generate")}</h3>
+              <p className="theme-kicker text-xs font-semibold">{translate("exam.builder")}</p>
+              <h3 className="mt-2 text-2xl font-semibold text-white">{translate("exam.generate")}</h3>
             </div>
-            <div className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white dark:bg-slate-800">
+            <div className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#2148c0] shadow-[0_18px_40px_rgba(5,13,42,0.28)]">
               {translate("exam.timer-preview")}: {durationMinutesOverride ? formatSeconds(Number(durationMinutesOverride) * 60) : count === "all" ? translate("exam.all-available") : formatSeconds(Number(count) * 60)}
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.category")}</span>
+              <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.category")}</span>
               <select
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
                 value={category}
                 onChange={(event) => {
                   const nextCategory = event.target.value as ExamCategory;
@@ -95,9 +95,9 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
               </select>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.subcategory")}</span>
+              <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.subcategory")}</span>
               <select
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
                 value={subcategory}
                 onChange={(event) => setSubcategory(event.target.value as ExamSubcategory | "all")}
               >
@@ -110,9 +110,9 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
               </select>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("exam.question-count")}</span>
+              <span className="mb-2 block text-sm font-medium text-white/72">{translate("exam.question-count")}</span>
               <select
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
                 value={count}
                 onChange={(event) => setCount(event.target.value)}
               >
@@ -125,9 +125,9 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
               </select>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.difficulty-focus")}</span>
+              <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.difficulty-focus")}</span>
               <select
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
                 value={difficulty}
                 onChange={(event) => setDifficulty(event.target.value as QuestionDifficulty)}
               >
@@ -140,24 +140,24 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
             </label>
             {isAdmin ? (
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("exam.admin-timer-minutes")}</span>
+                <span className="mb-2 block text-sm font-medium text-white/72">{translate("exam.admin-timer-minutes")}</span>
                 <input
                   type="number"
                   min={1}
                   value={durationMinutesOverride}
                   onChange={(event) => setDurationMinutesOverride(event.target.value)}
                   placeholder={translate("exam.admin-timer-placeholder")}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  className="theme-input w-full rounded-2xl px-4 py-3 text-sm"
                 />
               </label>
             ) : null}
           </div>
-          {error ? <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
+          {error ? <p className="theme-message-error mt-4 rounded-2xl px-4 py-3 text-sm">{error}</p> : null}
           <button
             type="button"
             onClick={startExam}
             disabled={loading}
-            className="mt-6 rounded-2xl bg-ember px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sand disabled:opacity-60"
+            className="theme-button-primary mt-6 rounded-2xl px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em]"
           >
             {loading ? translate("exam.preparing") : translate("exam.start-randomized")}
           </button>
@@ -167,58 +167,58 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
       {session && !summary ? <ExamRunner session={session} canAdjustTimer={isAdmin} onComplete={(result) => setSummary(result)} /> : null}
 
       {summary ? (
-        <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+        <section className="theme-card rounded-[2rem] p-6">
           <div className="mb-6 flex flex-wrap items-center gap-4">
-            <div className="rounded-3xl bg-slate-950 px-5 py-4 text-white dark:bg-slate-800">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-300">{translate("exam.score")}</p>
-              <p className="mt-2 text-4xl font-bold">{summary.score}%</p>
+            <div className="rounded-3xl bg-white px-5 py-4 text-[#2148c0] shadow-[0_18px_40px_rgba(5,13,42,0.28)]">
+              <p className="text-xs uppercase tracking-[0.25em] text-[#2148c0]/65">{translate("exam.score")}</p>
+              <p className="mt-2 text-4xl font-semibold">{summary.score}%</p>
             </div>
             <div className="grid flex-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-emerald-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-700">{translate("exam.correct")}</p>
-                <p className="mt-2 text-2xl font-bold text-emerald-900">{summary.correctCount}</p>
+              <div className="rounded-2xl border border-emerald-200/18 bg-emerald-500/16 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-emerald-100">{translate("exam.correct")}</p>
+                <p className="mt-2 text-2xl font-semibold text-emerald-50">{summary.correctCount}</p>
               </div>
-              <div className="rounded-2xl bg-rose-50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-rose-700">{translate("exam.wrong")}</p>
-                <p className="mt-2 text-2xl font-bold text-rose-900">{summary.wrongCount}</p>
+              <div className="rounded-2xl border border-rose-200/18 bg-rose-500/16 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-rose-100">{translate("exam.wrong")}</p>
+                <p className="mt-2 text-2xl font-semibold text-rose-50">{summary.wrongCount}</p>
               </div>
-              <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-900">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">{translate("exam.duration")}</p>
-                <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{formatSeconds(summary.durationSeconds)}</p>
+              <div className="theme-card-soft rounded-2xl p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/60">{translate("exam.duration")}</p>
+                <p className="mt-2 text-2xl font-semibold text-white">{formatSeconds(summary.durationSeconds)}</p>
               </div>
             </div>
           </div>
 
           <div className="mb-6 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{translate("dashboard.category")}</p>
-              <p className="mt-2 text-lg font-semibold text-slate-950 dark:text-slate-100">{getCategoryLabel(locale, summary.subject)}</p>
+            <div className="theme-card-soft rounded-2xl p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">{translate("dashboard.category")}</p>
+              <p className="mt-2 text-lg font-semibold text-white">{getCategoryLabel(locale, summary.subject)}</p>
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{translate("dashboard.subcategory")}</p>
-              <p className="mt-2 text-lg font-semibold text-slate-950 dark:text-slate-100">{getSubcategoryLabel(locale, summary.subcategory ?? "all")}</p>
+            <div className="theme-card-soft rounded-2xl p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">{translate("dashboard.subcategory")}</p>
+              <p className="mt-2 text-lg font-semibold text-white">{getSubcategoryLabel(locale, summary.subcategory ?? "all")}</p>
             </div>
           </div>
 
           <div className="mb-6 grid gap-4 xl:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{translate("exam.performance-subject")}</p>
+            <div className="theme-card-soft rounded-2xl p-4">
+              <p className="text-sm font-semibold text-white">{translate("exam.performance-subject")}</p>
               <div className="mt-3 space-y-3">
                 {summary.performanceBySubject.map((item) => (
-                  <div key={item.label} className="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{getCategoryLabel(locale, item.label as ExamCategory)}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">{item.correctCount}/{item.totalQuestions} • {item.score}%</p>
+                  <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3">
+                    <p className="font-medium text-white">{getCategoryLabel(locale, item.label as ExamCategory)}</p>
+                    <p className="text-sm text-white/66">{item.correctCount}/{item.totalQuestions} • {item.score}%</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{translate("exam.performance-subcategory")}</p>
+            <div className="theme-card-soft rounded-2xl p-4">
+              <p className="text-sm font-semibold text-white">{translate("exam.performance-subcategory")}</p>
               <div className="mt-3 space-y-3">
                 {summary.performanceBySubcategory.map((item) => (
-                  <div key={item.label} className="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{getSubcategoryLabel(locale, item.label as ExamSubcategory)}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">{item.correctCount}/{item.totalQuestions} • {item.score}%</p>
+                  <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3">
+                    <p className="font-medium text-white">{getSubcategoryLabel(locale, item.label as ExamSubcategory)}</p>
+                    <p className="text-sm text-white/66">{item.correctCount}/{item.totalQuestions} • {item.score}%</p>
                   </div>
                 ))}
               </div>
@@ -227,9 +227,9 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
 
           <div className="space-y-4">
             {summary.review.map((item, index) => (
-              <article key={item.questionId} className="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+              <article key={item.questionId} className="theme-card-soft rounded-2xl p-5">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                  <span className="theme-tag rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
                     {translate("exam.question")} {index + 1}
                   </span>
                   <span
@@ -240,19 +240,19 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
                     {item.isCorrect ? translate("status.correct") : translate("status.wrong")}
                   </span>
                 </div>
-                <h4 className="mt-4 text-lg font-semibold text-slate-950 dark:text-slate-100">{item.question}</h4>
+                <h4 className="mt-4 text-lg font-semibold text-white">{item.question}</h4>
                 <div className="mt-4 grid gap-2">
                   {item.choices.map((choice) => (
-                    <div key={`${item.questionId}-${choice.key}`} className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    <div key={`${item.questionId}-${choice.key}`} className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white/82">
                       <span className="font-semibold">{choice.label}.</span> {choice.text}
                     </div>
                   ))}
                 </div>
-                <p className="mt-4 text-sm text-slate-700 dark:text-slate-200">
+                <p className="mt-4 text-sm text-white/82">
                   {translate("exam.your-answer")}: <span className="font-semibold">{item.selectedKey ?? translate("exam.no-answer")}</span> | {translate("exam.correct-answer")}:{" "}
-                  <span className="font-semibold text-accent">{item.correctKey}</span>
+                  <span className="font-semibold text-[#dbe6ff]">{item.correctKey}</span>
                 </p>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{translate("exam.explanation")}: {item.explanation}</p>
+                <p className="mt-2 text-sm text-white/66">{translate("exam.explanation")}: {item.explanation}</p>
               </article>
             ))}
           </div>
@@ -263,7 +263,7 @@ export default function ExamWorkspace({ isAdmin = false }: { isAdmin?: boolean }
               setSession(null);
               setSummary(null);
             }}
-            className="mt-6 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-950 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-300 dark:hover:text-white"
+            className="theme-button-secondary mt-6 rounded-2xl px-4 py-3 text-sm font-semibold"
           >
             {translate("exam.start-another")}
           </button>

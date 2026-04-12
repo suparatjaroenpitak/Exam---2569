@@ -1,0 +1,128 @@
+import { useState } from "react";
+import image from "./image.svg";
+import vector from "./vector.svg";
+import vector2 from "./vector-2.svg";
+import vector3 from "./vector-3.svg";
+import vector4 from "./vector-4.svg";
+import vector5 from "./vector-5.svg";
+import vector6 from "./vector-6.svg";
+import vector7 from "./vector-7.svg";
+
+export const Box = (): JSX.Element => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+  };
+
+  return (
+    <div className="relative w-[300px] h-[398px]">
+      <div className="fixed top-[161px] left-[490px] w-[302px] h-[398px]">
+        <form onSubmit={handleLogin}>
+          <div className="absolute top-[169px] left-0 w-[302px] h-[45px]">
+            <label htmlFor="username-input" className="sr-only">
+              Username
+            </label>
+            <div className="border border-solid border-white absolute top-0 left-0 w-[300px] h-[45px] rounded" />
+            <div className="absolute top-[13px] left-[51px] [font-family:'Montserrat-Light',Helvetica] font-light text-white text-sm text-center tracking-[0] leading-5 whitespace-nowrap pointer-events-none">
+              USERNAME
+            </div>
+            <input
+              id="username-input"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              aria-label="Username"
+              className="absolute top-0 left-0 w-[300px] h-[45px] rounded bg-transparent border-0 outline-none text-white text-sm pl-[51px] [font-family:'Montserrat-Light',Helvetica] font-light tracking-[0] leading-5"
+              autoComplete="username"
+            />
+            <div className="absolute top-[13px] left-3 w-5 h-5 pointer-events-none">
+              <img
+                className="absolute w-[85.83%] h-[40.00%] top-[60.00%] left-[14.17%]"
+                alt="Vector"
+                src={vector}
+              />
+              <img
+                className="absolute w-[69.17%] h-[90.00%] top-[10.00%] left-[30.83%]"
+                alt="Vector"
+                src={image}
+              />
+            </div>
+          </div>
+          <div className="absolute top-[234px] left-0 w-[302px] h-[45px]">
+            <label htmlFor="password-input" className="sr-only">
+              Password
+            </label>
+            <div className="border border-solid border-white absolute top-0 left-0 w-[300px] h-[45px] rounded" />
+            <div className="absolute top-[13px] left-[51px] [font-family:'Montserrat-Light',Helvetica] font-light text-white text-sm text-center tracking-[0] leading-5 whitespace-nowrap pointer-events-none">
+              PASSWORD
+            </div>
+            <input
+              id="password-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              aria-label="Password"
+              className="absolute top-0 left-0 w-[300px] h-[45px] rounded bg-transparent border-0 outline-none text-white text-sm pl-[51px] [font-family:'Montserrat-Light',Helvetica] font-light tracking-[0] leading-5"
+              autoComplete="current-password"
+            />
+            <div className="absolute w-[6.62%] h-[44.44%] top-[28.89%] left-[3.97%] pointer-events-none">
+              <img
+                className="absolute w-[90.00%] h-[56.67%] top-[43.33%] left-[10.00%]"
+                alt="Vector"
+                src={vector2}
+              />
+              <img
+                className="absolute w-[73.33%] h-[94.17%] top-[5.83%] left-[26.67%]"
+                alt="Vector"
+                src={vector3}
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="all-[unset] box-border absolute top-[322px] left-0 w-[302px] h-[45px] cursor-pointer"
+            aria-label="Login"
+          >
+            <div className="bg-white shadow-[0px_4px_4px_#0000004c] absolute top-0 left-0 w-[300px] h-[45px] rounded" />
+            <div className="absolute top-[13px] left-[123px] [font-family:'Montserrat-SemiBold',Helvetica] font-semibold text-[#2148c0] text-base text-center tracking-[0] leading-5 whitespace-nowrap">
+              LOGIN
+            </div>
+          </button>
+        </form>
+        <div className="absolute top-[378px] left-[154px] [font-family:'Montserrat-Medium',Helvetica] font-medium text-white text-base text-center tracking-[0] leading-[normal]">
+          <button
+            type="button"
+            className="all-[unset] box-border cursor-pointer [font-family:'Montserrat-Medium',Helvetica] font-medium text-white text-base text-center tracking-[0] leading-[normal]"
+            aria-label="Forgot password"
+          >
+            Forgot password?
+          </button>
+        </div>
+        <div className="absolute w-[39.53%] h-[24.59%] top-0 left-[29.80%]">
+          <img
+            className="absolute w-[101.57%] h-[101.92%] top-0 left-0"
+            alt="Vector"
+            src={vector4}
+          />
+          <img
+            className="absolute w-[53.42%] h-[80.38%] top-[19.62%] left-[46.58%]"
+            alt="Vector"
+            src={vector5}
+          />
+          <img
+            className="absolute w-[58.77%] h-[12.93%] top-[87.07%] left-[41.23%]"
+            alt="Vector"
+            src={vector6}
+          />
+          <img
+            className="absolute w-[35.97%] h-[12.93%] top-[87.07%] left-[64.03%]"
+            alt="Vector"
+            src={vector7}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

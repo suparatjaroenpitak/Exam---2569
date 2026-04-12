@@ -52,37 +52,37 @@ export function ExamRunner(props: {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.45fr_0.7fr]">
       <div className="space-y-6">
-        <div className="rounded-[2rem] border border-white/60 bg-white/90 p-5 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+        <div className="theme-card rounded-[2rem] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("exam.live")}</p>
-              <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{getCategoryLabel(locale, props.session.subject)}</h3>
+              <p className="theme-kicker text-xs font-semibold">{translate("exam.live")}</p>
+              <h3 className="mt-2 text-2xl font-semibold text-white">{getCategoryLabel(locale, props.session.subject)}</h3>
             </div>
-            <div className="rounded-2xl bg-slate-950 px-4 py-3 text-center text-white dark:bg-slate-800">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-300">{translate("exam.time-left")}</p>
-              <p className="mt-1 text-2xl font-bold">{formatSeconds(exam.timeLeftSeconds)}</p>
+            <div className="rounded-2xl bg-white px-4 py-3 text-center text-[#2148c0] shadow-[0_18px_40px_rgba(5,13,42,0.28)]">
+              <p className="text-xs uppercase tracking-[0.25em] text-[#2148c0]/65">{translate("exam.time-left")}</p>
+              <p className="mt-1 text-2xl font-semibold">{formatSeconds(exam.timeLeftSeconds)}</p>
             </div>
           </div>
-          <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-200">
-            <div className="h-full rounded-full bg-ember transition-all" style={{ width: `${exam.progressPercentage}%` }} />
+          <div className="theme-progress-track mt-5 h-3 overflow-hidden rounded-full">
+            <div className="theme-progress-bar h-full rounded-full transition-all" style={{ width: `${exam.progressPercentage}%` }} />
           </div>
-          <div className="mt-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+          <div className="mt-3 flex items-center justify-between text-sm text-white/72">
             <span>
               {translate("exam.question")} {exam.currentIndex + 1} {translate("exam.of")} {props.session.questions.length}
             </span>
             <span>{exam.answeredCount} {translate("exam.answered")}</span>
           </div>
           {props.canAdjustTimer ? (
-            <div className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl bg-amber-50 px-4 py-3 dark:bg-slate-900">
+            <div className="theme-card-soft mt-4 flex flex-wrap items-end gap-3 rounded-2xl px-4 py-3">
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("exam.admin-adjust-timer")}</span>
+                <span className="mb-2 block text-sm font-medium text-white/72">{translate("exam.admin-adjust-timer")}</span>
                 <input
                   type="number"
                   min={0}
                   value={timerMinutes}
                   onChange={(event) => setTimerMinutes(event.target.value)}
                   placeholder={translate("exam.admin-timer-placeholder")}
-                  className="w-40 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  className="theme-input w-40 rounded-2xl px-4 py-3 text-sm"
                 />
               </label>
               <button
@@ -94,7 +94,7 @@ export function ExamRunner(props: {
 
                   exam.setRemainingTime(Number(timerMinutes) * 60);
                 }}
-                className="rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200"
+                className="theme-button-primary rounded-2xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.16em]"
               >
                 {translate("exam.apply-timer")}
               </button>
@@ -112,14 +112,14 @@ export function ExamRunner(props: {
           <button
             type="button"
             onClick={exam.previous}
-            className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-950 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-300 dark:hover:text-white"
+            className="theme-button-secondary rounded-2xl px-4 py-3 text-sm font-semibold"
           >
             {translate("exam.previous")}
           </button>
           <button
             type="button"
             onClick={exam.next}
-            className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-950 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-300 dark:hover:text-white"
+            className="theme-button-secondary rounded-2xl px-4 py-3 text-sm font-semibold"
           >
             {translate("exam.next")}
           </button>
@@ -127,7 +127,7 @@ export function ExamRunner(props: {
             type="button"
             disabled={submitting}
             onClick={() => void handleSubmit(exam.toPayload())}
-            className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+            className="theme-button-primary rounded-2xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em]"
           >
             {submitting ? translate("exam.submitting") : translate("exam.submit")}
           </button>
@@ -135,9 +135,9 @@ export function ExamRunner(props: {
       </div>
 
       <aside className="space-y-6">
-        <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("exam.navigation")}</p>
-          <h3 className="mt-2 text-xl font-bold text-slate-950 dark:text-slate-100">{translate("exam.jump")}</h3>
+        <section className="theme-card rounded-[2rem] p-6">
+          <p className="theme-kicker text-xs font-semibold">{translate("exam.navigation")}</p>
+          <h3 className="mt-2 text-xl font-semibold text-white">{translate("exam.jump")}</h3>
           <div className="mt-5">
             <QuestionPalette
               total={props.session.questions.length}

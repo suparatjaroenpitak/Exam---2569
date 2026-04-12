@@ -9,17 +9,17 @@ export function HistoryTable({ history }: { history: ExamResultRow[] }) {
   const { locale, translate } = usePreferences();
 
   return (
-    <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+    <section className="theme-card rounded-[2rem] p-6">
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("history.eyebrow")}</p>
-        <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("history.title")}</h3>
+        <p className="theme-kicker text-xs font-semibold">{translate("history.eyebrow")}</p>
+        <h3 className="mt-2 text-2xl font-semibold text-white">{translate("history.title")}</h3>
       </div>
       {history.length === 0 ? (
-        <p className="rounded-2xl bg-slate-50 px-4 py-5 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">{translate("history.empty")}</p>
+        <p className="theme-card-soft rounded-2xl px-4 py-5 text-sm text-white/72">{translate("history.empty")}</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-slate-500 dark:bg-slate-900 dark:text-slate-300">
+        <div className="overflow-hidden rounded-2xl border border-white/12 bg-white/[0.05]">
+          <table className="min-w-full divide-y divide-white/10 text-sm">
+            <thead className="bg-white/[0.08] text-left text-white/60">
               <tr>
                 <th className="px-4 py-3 font-medium">{translate("history.date")}</th>
                 <th className="px-4 py-3 font-medium">{translate("history.category")}</th>
@@ -28,16 +28,16 @@ export function HistoryTable({ history }: { history: ExamResultRow[] }) {
                 <th className="px-4 py-3 font-medium">{translate("history.duration")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-950/60">
+            <tbody className="divide-y divide-white/10">
               {history.map((item) => (
                 <tr key={item.id}>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatDateTime(item.createdAt, locale)}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{getCategoryLabel(locale, item.subject)}</td>
-                  <td className="px-4 py-3 font-semibold text-accent">{item.score}%</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
+                  <td className="px-4 py-3 text-white/72">{formatDateTime(item.createdAt, locale)}</td>
+                  <td className="px-4 py-3 font-medium text-white">{getCategoryLabel(locale, item.subject)}</td>
+                  <td className="px-4 py-3 font-semibold text-[#dbe6ff]">{item.score}%</td>
+                  <td className="px-4 py-3 text-white/72">
                     {item.correctCount}/{item.totalQuestions}
                   </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{Math.ceil(Number(item.durationSeconds) / 60)} {translate("history.min")}</td>
+                  <td className="px-4 py-3 text-white/72">{Math.ceil(Number(item.durationSeconds) / 60)} {translate("history.min")}</td>
                 </tr>
               ))}
             </tbody>

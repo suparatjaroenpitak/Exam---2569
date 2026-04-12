@@ -3,59 +3,78 @@
 import Link from "next/link";
 
 import { usePreferences } from "@/components/preferences-provider";
+import { BrandMark } from "@/components/ui/brand-mark";
 import { PreferenceControls } from "@/components/ui/preference-controls";
 
 export default function HomePage() {
   const { translate } = usePreferences();
 
   return (
-    <main className="min-h-screen bg-mist bg-halo text-ink dark:text-slate-100">
+    <main className="theme-screen">
       <section className="mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-4 py-20 sm:px-6 lg:px-8">
         <div className="mb-8 flex justify-end">
           <PreferenceControls />
         </div>
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-accent">{translate("home.eyebrow")}</p>
-            <h1 className="mt-5 max-w-4xl text-5xl font-extrabold tracking-tight text-slate-950 dark:text-slate-50 sm:text-6xl">
+            <div className="mb-6 flex items-center gap-4">
+              <BrandMark className="h-20 w-20" />
+              <p className="theme-kicker text-xs font-semibold">{translate("home.eyebrow")}</p>
+            </div>
+            <h1 className="max-w-4xl text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl">
               {translate("home.title")}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
+            <p className="theme-muted mt-6 max-w-2xl text-base leading-8 sm:text-lg">
               {translate("home.description")}
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <Link className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent dark:bg-amber-300 dark:text-slate-950 dark:hover:bg-amber-200" href="/login">
+              <Link className="theme-button-primary rounded-2xl px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em]" href="/login">
                 {translate("home.login")}
               </Link>
-              <Link className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-950 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-300 dark:hover:text-white" href="/register">
+              <Link className="theme-button-secondary rounded-2xl px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em]" href="/register">
                 {translate("home.register")}
               </Link>
             </div>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <div className="theme-card-soft rounded-[1.75rem] p-5">
+                <p className="text-xs uppercase tracking-[0.24em] text-white/60">{translate("home.categories")}</p>
+                <p className="mt-3 text-3xl font-semibold text-white">4</p>
+              </div>
+              <div className="theme-card-soft rounded-[1.75rem] p-5">
+                <p className="text-xs uppercase tracking-[0.24em] text-white/60">{translate("home.storage")}</p>
+                <p className="mt-3 text-3xl font-semibold text-white">Excel</p>
+              </div>
+              <div className="theme-card-soft rounded-[1.75rem] p-5">
+                <p className="text-xs uppercase tracking-[0.24em] text-white/60">{translate("home.timer")}</p>
+                <p className="mt-3 text-3xl font-semibold text-white">1:1</p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-4">
-            <div className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("home.features")}</p>
-              <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
-                <li>{translate("home.feature.auth")}</li>
-                <li>{translate("home.feature.storage")}</li>
-                <li>{translate("home.feature.pdf")}</li>
-                <li>{translate("home.feature.nlp")}</li>
-                <li>{translate("home.feature.runner")}</li>
+          <div className="theme-card relative overflow-hidden rounded-[2.5rem] p-8 sm:p-10">
+            <div className="absolute -right-12 top-8 h-28 w-28 rounded-full bg-white/12 blur-3xl" />
+            <div className="absolute -bottom-12 left-10 h-32 w-32 rounded-full bg-[#8cabff]/25 blur-3xl" />
+            <div className="relative">
+              <p className="theme-kicker text-xs font-semibold">{translate("home.features")}</p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">Focused practice in a single flow</h2>
+              <ul className="mt-6 space-y-4">
+                {["home.feature.auth", "home.feature.storage", "home.feature.pdf", "home.feature.nlp", "home.feature.runner"].map((key) => (
+                  <li key={key} className="flex items-start gap-3">
+                    <span className="mt-2 h-2.5 w-2.5 rounded-full bg-white/85" />
+                    <span className="theme-muted text-sm leading-7">{translate(key)}</span>
+                  </li>
+                ))}
               </ul>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[2rem] bg-slate-950 p-5 text-white shadow-panel dark:bg-slate-800">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">{translate("home.categories")}</p>
-                <p className="mt-3 text-3xl font-bold">4</p>
-              </div>
-              <div className="rounded-[2rem] bg-white/90 p-5 shadow-panel backdrop-blur dark:bg-slate-950/80">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{translate("home.storage")}</p>
-                <p className="mt-3 text-3xl font-bold text-slate-950 dark:text-slate-100">Prisma</p>
-              </div>
-              <div className="rounded-[2rem] bg-amber-100 p-5 shadow-panel">
-                <p className="text-xs uppercase tracking-[0.2em] text-amber-800">{translate("home.timer")}</p>
-                <p className="mt-3 text-3xl font-bold text-amber-950">1:1</p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="theme-card-soft rounded-[1.75rem] p-5">
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/60">Adaptive workflow</p>
+                  <p className="mt-3 text-lg font-semibold text-white">Login, generate, practice, review</p>
+                </div>
+                <div className="rounded-[1.75rem] bg-white px-5 py-6 text-[#2148c0] shadow-[0_18px_40px_rgba(5,13,42,0.26)]">
+                  <p className="text-xs uppercase tracking-[0.24em] text-[#2148c0]/65">Exam cadence</p>
+                  <p className="mt-3 text-3xl font-semibold">Ready now</p>
+                  <p className="mt-2 text-sm leading-6 text-[#2148c0]/80">Structured for quick entry and low-friction practice.</p>
+                </div>
               </div>
             </div>
           </div>

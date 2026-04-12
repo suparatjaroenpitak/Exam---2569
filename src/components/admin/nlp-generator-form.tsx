@@ -145,17 +145,17 @@ export function NlpGeneratorForm() {
   }
 
   return (
-    <section className="rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-panel backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
+    <section className="theme-card rounded-[2rem] p-6">
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">{translate("admin.nlp-generator")}</p>
-        <h3 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-100">{translate("admin.create-nlp")}</h3>
+        <p className="theme-kicker text-xs font-semibold">{translate("admin.nlp-generator")}</p>
+        <h3 className="mt-2 text-2xl font-semibold text-white">{translate("admin.create-nlp")}</h3>
       </div>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-3">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.category")}</span>
+            <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.category")}</span>
             <select
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
               value={category}
               onChange={(event) => {
                 const nextCategory = event.target.value as ExamCategory;
@@ -171,9 +171,9 @@ export function NlpGeneratorForm() {
             </select>
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("admin.subcategory")}</span>
+            <span className="mb-2 block text-sm font-medium text-white/72">{translate("admin.subcategory")}</span>
             <select
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
               value={subcategory}
               onChange={(event) => setSubcategory(event.target.value as ExamSubcategory)}
             >
@@ -185,20 +185,20 @@ export function NlpGeneratorForm() {
             </select>
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("dashboard.questions")}</span>
+            <span className="mb-2 block text-sm font-medium text-white/72">{translate("dashboard.questions")}</span>
             <input
               min={1}
               max={100}
               type="number"
               value={count}
               onChange={(event) => setCount(Number(event.target.value))}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="theme-input w-full rounded-2xl px-4 py-3 text-sm"
             />
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">{translate("admin.difficulty")}</span>
+            <span className="mb-2 block text-sm font-medium text-white/72">{translate("admin.difficulty")}</span>
             <select
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-accent dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="theme-input w-full appearance-none rounded-2xl px-4 py-3 text-sm"
               value={difficulty}
               onChange={(event) => setDifficulty(event.target.value as QuestionDifficulty)}
             >
@@ -212,25 +212,25 @@ export function NlpGeneratorForm() {
         </div>
         {progress > 0 ? (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm text-slate-700 dark:text-slate-200">
+            <div className="flex items-center justify-between text-sm text-white/80">
               <span>{progressLabel ?? translate("admin.generating")}</span>
               <span>{progress}%</span>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+            <div className="theme-progress-track h-3 overflow-hidden rounded-full">
               <div
-                className="h-full rounded-full bg-ember transition-all duration-500"
+                className="theme-progress-bar h-full rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            {progressDetail ? <p className="text-xs text-slate-500 dark:text-slate-400">{progressDetail}</p> : null}
+            {progressDetail ? <p className="text-xs text-white/58">{progressDetail}</p> : null}
           </div>
         ) : null}
-        {message ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-        {error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
+        {message ? <p className="theme-message-success rounded-2xl px-4 py-3 text-sm">{message}</p> : null}
+        {error ? <p className="theme-message-error rounded-2xl px-4 py-3 text-sm">{error}</p> : null}
         <button
           type="submit"
           disabled={loading}
-          className="rounded-2xl bg-ember px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sand disabled:opacity-60"
+          className="theme-button-primary rounded-2xl px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em]"
         >
           {loading ? translate("admin.generating") : translate("admin.generate")}
         </button>
