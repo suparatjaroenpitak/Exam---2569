@@ -7,7 +7,6 @@ import { type FormEvent, useState } from "react";
 import { apiRequest } from "@/api/client";
 import { usePreferences } from "@/components/preferences-provider";
 import { BrandMark } from "@/components/ui/brand-mark";
-import { PreferenceControls } from "@/components/ui/preference-controls";
 
 type AuthMode = "login" | "register";
 
@@ -50,9 +49,9 @@ function AuthField(props: {
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.28em] text-white/72">{props.label}</span>
+      <span className="sr-only">{props.label}</span>
       <div className="relative">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/74">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white">
           <AuthFieldIcon kind={props.icon} />
         </span>
         <input
@@ -62,7 +61,8 @@ function AuthField(props: {
           type={props.type ?? "text"}
           value={props.value}
           onChange={(event) => props.onChange(event.target.value)}
-          className="theme-input w-full rounded-2xl py-3.5 pl-12 pr-4 text-sm font-medium"
+          placeholder={props.label}
+          className="theme-auth-input w-full py-3 pl-[41px] pr-4"
         />
       </div>
     </label>
@@ -100,24 +100,13 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   }
 
   return (
-    <div className="theme-card w-full max-w-md rounded-[2.4rem] p-6 sm:p-8">
-      <div className="mb-6 flex justify-end">
-        <PreferenceControls />
-      </div>
-      <div className="mb-8 text-center">
-        <div className="flex justify-center">
-          <BrandMark className="h-24 w-24" />
-        </div>
-        <p className="theme-kicker mt-6 text-[11px] font-semibold">{translate("auth.eyebrow")}</p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">{mode === "login" ? translate("auth.login.title") : translate("auth.register.title")}</h1>
-        <p className="theme-muted mt-3 text-sm leading-7">
-          {mode === "login"
-            ? translate("auth.login.description")
-            : translate("auth.register.description")}
-        </p>
+    <div className="theme-auth-stack w-full">
+      <div className="mb-12 flex flex-col items-center text-center">
+        <BrandMark className="h-[98px] w-[124px]" />
+        {mode === "register" ? <p className="mt-8 text-sm text-white/72">{translate("auth.register.description")}</p> : null}
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleSubmit}>
         {mode === "register" ? (
           <AuthField
             label={translate("auth.name")}
@@ -152,15 +141,23 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         <button
           type="submit"
           disabled={loading}
-          className="theme-button-primary mt-2 w-full rounded-2xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em]"
+          className="theme-button-primary mt-3 h-[45px] w-full rounded-md px-4 text-base font-semibold uppercase tracking-[0.08em]"
         >
           {loading ? translate("auth.loading") : mode === "login" ? translate("auth.login.submit") : translate("auth.register.submit")}
         </button>
       </form>
 
-      <div className="theme-muted mt-6 flex items-center justify-between gap-3 text-sm">
+      {mode === "login" ? (
+        <div className="mt-3 flex justify-end">
+          <button type="button" className="theme-auth-link text-base font-medium">
+            Forgot password?
+          </button>
+        </div>
+      ) : null}
+
+      <div className="mt-5 flex items-center justify-center gap-2 text-sm text-white/74">
         <span>{mode === "login" ? translate("auth.need-account") : translate("auth.have-account")}</span>
-        <Link className="theme-link font-semibold" href={mode === "login" ? "/register" : "/login"}>
+        <Link className="theme-auth-link font-semibold uppercase tracking-[0.08em]" href={mode === "login" ? "/register" : "/login"}>
           {mode === "login" ? translate("auth.register.submit") : translate("auth.login.submit")}
         </Link>
       </div>

@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans_Thai, Manrope } from "next/font/google";
+import { IBM_Plex_Sans_Thai } from "next/font/google";
 
 import "@/app/globals.css";
 import { PreferencesProvider } from "@/components/preferences-provider";
-
-const headingFont = Manrope({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-heading"
-});
 
 const bodyFont = IBM_Plex_Sans_Thai({
   subsets: ["latin", "thai"],
@@ -24,7 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th">
-      <body suppressHydrationWarning className={`${headingFont.variable} ${bodyFont.variable} antialiased`}>
+      <body suppressHydrationWarning className={`${bodyFont.variable} antialiased`}>
         <PreferencesProvider>{children}</PreferencesProvider>
       </body>
     </html>

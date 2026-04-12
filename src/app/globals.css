@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -38,9 +39,10 @@ html {
 body {
     min-height: 100vh;
     color: var(--theme-text);
-    background: linear-gradient(140deg, var(--theme-bg-start), var(--theme-bg-end));
+    background: linear-gradient(180deg, var(--theme-bg-start), var(--theme-bg-end));
     background-attachment: fixed;
-    font-family: "Montserrat", var(--font-heading), var(--font-body), sans-serif;
+    font-family: "Montserrat", var(--font-body), sans-serif;
+    overflow-x: hidden;
     transition: background 0.25s ease, color 0.25s ease;
 }
 
@@ -49,7 +51,7 @@ body::before {
     position: fixed;
     inset: 0;
     z-index: -2;
-    background: radial-gradient(circle at 18% 18%, var(--theme-glow), transparent 24%), radial-gradient(circle at 82% 10%, var(--theme-glow-soft), transparent 22%), radial-gradient(circle at 74% 76%, rgba(4, 10, 36, 0.28), transparent 26%);
+    background: radial-gradient(circle at -4% 86%, #264ec9 0 18%, transparent 18.35%), radial-gradient(circle at 3.5% 87.5%, #234bc5 0 14.5%, transparent 14.85%), radial-gradient(circle at 9% 89%, #274ec7 0 11%, transparent 11.35%), linear-gradient(180deg, var(--theme-bg-start), var(--theme-bg-end));
 }
 
 body::after {
@@ -57,7 +59,9 @@ body::after {
     position: fixed;
     inset: 0;
     z-index: -1;
-    background: linear-gradient(125deg, rgba(255, 255, 255, 0.08) 0%, transparent 24%, transparent 68%, rgba(255, 255, 255, 0.06) 100%), radial-gradient(circle at center, transparent 55%, rgba(2, 6, 23, 0.24) 100%);
+    background: radial-gradient(circle at 94% 16%, rgba(255, 255, 255, 0.08), transparent 23%), linear-gradient(128deg, transparent 0 56.9%, rgba(255, 255, 255, 0.13) 57.1% 57.55%, transparent 57.8% 100%), linear-gradient(131deg, transparent 0 61.8%, rgba(255, 255, 255, 0.08) 62% 62.35%, transparent 62.65% 100%), linear-gradient(134deg, transparent 0 66.7%, rgba(255, 255, 255, 0.05) 66.9% 67.2%, transparent 67.45% 100%);
+    mix-blend-mode: screen;
+    opacity: 0.92;
     pointer-events: none;
 }
 
@@ -75,16 +79,18 @@ body::after {
         position: relative;
         min-height: 100vh;
         color: var(--theme-text);
+        isolation: isolate;
+        overflow: hidden;
     }
     .theme-card {
         border: 1px solid var(--theme-border);
-        background: linear-gradient(180deg, var(--theme-panel-top), var(--theme-panel-bottom));
-        box-shadow: var(--theme-shadow);
-        backdrop-filter: blur(28px);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.048), rgba(255, 255, 255, 0.022));
+        box-shadow: 0 14px 36px rgba(8, 18, 57, 0.12);
+        backdrop-filter: blur(12px);
     }
     .theme-card-soft {
         border: 1px solid rgba(255, 255, 255, 0.14);
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.035);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
     .theme-kicker {
@@ -102,8 +108,8 @@ body::after {
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
     .theme-input {
-        border: 1px solid rgba(255, 255, 255, 0.34);
-        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.025);
         color: var(--theme-text);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
         transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -123,6 +129,48 @@ body::after {
         background: #eef4ff;
         color: #17359a;
     }
+    .theme-auth-input {
+        height: 45px;
+        border: 1px solid rgba(255, 255, 255, 0.92);
+        border-radius: 0.375rem;
+        background: transparent;
+        color: #ffffff;
+        font-family: "Montserrat", var(--font-body), sans-serif;
+        font-size: 0.875rem;
+        font-weight: 300;
+        letter-spacing: 0;
+        transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .theme-auth-input::placeholder {
+        color: rgba(255, 255, 255, 0.96);
+        font-weight: 300;
+        letter-spacing: 0.02em;
+    }
+    .theme-auth-input:hover {
+        background: rgba(255, 255, 255, 0.04);
+    }
+    .theme-auth-input:focus {
+        outline: none;
+        border-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
+    }
+    .theme-auth-stack {
+        width: 300px;
+    }
+    .theme-title {
+        font-weight: 600;
+        letter-spacing: -0.05em;
+        color: #ffffff;
+    }
+    .theme-outline-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent);
+    }
+    .theme-toolbar {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+    }
     .theme-button-primary,
     .theme-button-secondary,
     .theme-button-alert,
@@ -135,9 +183,9 @@ body::after {
         transition: transform 0.2s ease, opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
     }
     .theme-button-primary {
-        background: linear-gradient(180deg, #ffffff, #edf3ff);
+        background: #ffffff;
         color: var(--theme-button-text);
-        box-shadow: 0 18px 40px rgba(5, 13, 42, 0.36);
+        box-shadow: 0 4px 4px rgba(0, 0, 0, 0.3);
     }
     .theme-button-primary:hover {
         transform: translateY(-1px);
@@ -145,7 +193,7 @@ body::after {
     }
     .theme-button-secondary {
         border: 1px solid var(--theme-border);
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
         color: var(--theme-text);
     }
     .theme-button-secondary:hover,
@@ -184,6 +232,8 @@ body::after {
     .theme-nav-link {
         border: 1px solid transparent;
         color: rgba(234, 241, 255, 0.78);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
     }
     .theme-link {
         color: rgba(255, 255, 255, 0.92);
@@ -192,6 +242,15 @@ body::after {
     .theme-link:hover {
         color: var(--theme-text);
         opacity: 1;
+    }
+    .theme-auth-link {
+        color: #ffffff;
+        transition: opacity 0.2s ease, text-decoration-color 0.2s ease;
+    }
+    .theme-auth-link:hover {
+        opacity: 0.88;
+        text-decoration: underline;
+        text-decoration-color: rgba(255, 255, 255, 0.9);
     }
     .theme-progress-track {
         background: rgba(255, 255, 255, 0.12);
