@@ -113,7 +113,7 @@ async function callOllama(prompt: string, options?: { temperature?: number; maxT
       stream: false,
       options: {
         temperature: options?.temperature ?? 0.8,
-        num_predict: options?.maxTokens ?? 4096
+        num_predict: options?.maxTokens ?? 2048
       }
     })
   });

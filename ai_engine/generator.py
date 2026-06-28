@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import zlib
 import random
 from collections import Counter
 from typing import Any
@@ -72,7 +73,8 @@ GENERIC_DISTRACTORS = [
 
 
 def normalize_text(value: Any) -> str:
-    return " ".join(normalize(str(value or "")).strip().split())
+    cleaned = str(value or "").encode("utf-8", errors="replace").decode("utf-8")
+    return " ".join(normalize(cleaned).strip().split())
 
 
 def split_sentences(text: str) -> list[str]:
@@ -87,7 +89,7 @@ def split_sentences(text: str) -> list[str]:
 
 def stable_seed(*values: Any) -> int:
     joined = "::".join(normalize_text(value) for value in values)
-    return int(hashlib.sha256(joined.encode("utf-8")).hexdigest()[:16], 16)
+    return zlib.adler32(joined.encode("utf-8")) & 0x7FFFFFFF
 
 
 def extract_keywords(text: str, limit: int = 6) -> list[str]:
@@ -332,7 +334,7 @@ def generate_questions(payload: dict[str, Any]) -> list[dict[str, str]]:
     items: list[dict[str, str]] = []
     seen = set()
 
-    for index in range(offset, offset + count * 3):
+    for index in range(offset, offset + count + 5):
         row = rule_based_question(subject, topic, difficulty, index)
         key = normalize_text(row["question"]).lower()
         if key in seen:

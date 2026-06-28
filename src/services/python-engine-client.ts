@@ -13,7 +13,7 @@ async function callHttp(endpoint: string, payload: unknown) {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12_000);
+  const timeout = setTimeout(() => controller.abort(), 8_000);
   try {
     const response = await fetch(`${env.pythonAiUrl}${endpoint}`, {
       method: "POST",

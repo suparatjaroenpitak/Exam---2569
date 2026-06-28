@@ -639,7 +639,7 @@ export async function generateQuestionsWithWangchanNlp(input: {
   }
 
   // Try multiple model attempts to get enough items in the requested subcategory.
-  const maxModelAttempts = isOllamaConfigured() ? 2 : 5;
+  const maxModelAttempts = isOllamaConfigured() ? 1 : 2;
   for (let attempt = 0; attempt < maxModelAttempts && collected.length < input.count; attempt++) {
     try {
       const rows = await generateQuestionsWithThaiModel(input);

@@ -229,6 +229,7 @@ def run_cli(command: str, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")
     command = sys.argv[1] if len(sys.argv) > 1 else "generate"
     payload = json.load(sys.stdin)
     print(json.dumps(run_cli(command, payload), ensure_ascii=False))

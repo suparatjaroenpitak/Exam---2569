@@ -57,7 +57,7 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   };
 
   await report(8, "preparing", `Preparing ${payload.count} questions for ${payload.subcategory}`);
-  const maxAttempts = 3;
+  const maxAttempts = 2;
   let generated: any[] = [];
   let lastGenerationError: Error | null = null;
   const existingRows = await loadQuestions();
@@ -101,7 +101,7 @@ export async function generateAndSave(payload: { category: string; subcategory: 
     }
 
     if (Array.isArray(generated) && generated.length > 0) break;
-    await new Promise((res) => setTimeout(res, 600));
+    await new Promise((res) => setTimeout(res, 100));
   }
   if (!Array.isArray(generated) || generated.length === 0) {
     if (isOllamaConfigured()) {
@@ -290,7 +290,7 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   }
 
   let fillAttempts = 0;
-  const maxFillAttempts = Math.max(requestedCount * 3, 12);
+  const maxFillAttempts = Math.max(requestedCount, 6);
   while (valid.length < generationTarget && fillAttempts < maxFillAttempts) {
     fillAttempts += 1;
     const remaining = generationTarget - valid.length;
