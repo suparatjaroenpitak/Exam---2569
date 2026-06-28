@@ -121,7 +121,13 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   }
 
   if (!Array.isArray(generated) || generated.length === 0) {
-    throw new Error("All generation backends returned no questions.");
+    const configStatus = isOllamaConfigured()
+      ? `Ollama: enabled (${env.ollamaBaseUrl})`
+      : `Ollama: disabled (ENABLE_OLLAMA=${env.enableOllama}, OLLAMA_BASE_URL="${env.ollamaBaseUrl}")`;
+    throw new Error(
+      `All generation backends returned no questions. ${configStatus}. `
+      + `On Render, set OLLAMA_BASE_URL to your Colab tunnel URL and ENABLE_OLLAMA=1.`
+    );
   }
 
   await report(42, "validating", `Validating ${generated.length} generated questions`);
