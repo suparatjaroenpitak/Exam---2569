@@ -39,7 +39,8 @@ function callCli(command: string, payload: unknown) {
   const result = spawnSync(python.command, [...python.args, "-m", "ai_engine.main", command], {
     input: JSON.stringify(payload),
     encoding: "utf8",
-    maxBuffer: 10 * 1024 * 1024
+    maxBuffer: 10 * 1024 * 1024,
+    env: { ...process.env, PYTHONIOENCODING: "utf-8" }
   });
 
   if (result.error) {

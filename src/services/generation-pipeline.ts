@@ -83,53 +83,37 @@ export async function generateAndSave(payload: { category: string; subcategory: 
 
   const generationTarget = Math.max(1, requestedCount - cachedRows.length);
 
-  async function tryPythonEngine() {
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      await report(12 + (attempt - 1) * 8, "generating", `Generating draft questions${maxAttempts > 1 ? ` (attempt ${attempt}/${maxAttempts})` : ""}`);
-      try {
-        const rows = await generateWithPythonEngine({
-          category: payload.category,
-          subcategory: payload.subcategory,
-          count: generationTarget,
-          difficulty: payload.difficulty,
-          offset: 0
-        });
-        if (Array.isArray(rows) && rows.length > 0) return rows;
-      } catch { /* try next */ }
-      await new Promise((res) => setTimeout(res, 100));
-    }
-    return null;
+  await report(15, "generating", `Generating ${generationTarget} questions...`);
+
+  // Try Python engine (rule-based + CLI fallback when no server running)
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      generated = await generateWithPythonEngine({
+        category: payload.category,
+        subcategory: payload.subcategory,
+        count: generationTarget,
+        difficulty: payload.difficulty,
+        offset: 0
+      });
+      if (Array.isArray(generated) && generated.length > 0) break;
+    } catch { /* retry */ }
+    await new Promise((res) => setTimeout(res, 100));
   }
 
-  async function tryOllama() {
-    if (!isOllamaConfigured()) return null;
-    await report(25, "generating", "Generating with Ollama AI on Colab...");
+  // If Python returned nothing and Ollama is configured, try Ollama
+  if (isOllamaConfigured() && (!Array.isArray(generated) || generated.length === 0)) {
+    await report(25, "generating", "Trying Ollama AI on Colab...");
     try {
-      const rows = await generateQuestionsWithOllama({
+      const ollamaRows = await generateQuestionsWithOllama({
         category: payload.category as any,
         subcategory: payload.subcategory as any,
         count: generationTarget,
         difficulty: payload.difficulty as any
       });
-      if (Array.isArray(rows) && rows.length > 0) {
-        return rows.map((row) => ({ ...row, source: "llm", generation_mode: "ollama" }));
+      if (Array.isArray(ollamaRows) && ollamaRows.length > 0) {
+        generated = ollamaRows.map((row) => ({ ...row, source: "llm", generation_mode: "ollama" }));
       }
-    } catch { /* fall through */ }
-    return null;
-  }
-
-  // Try Ollama first when configured (faster), fall back to Python engine
-  if (isOllamaConfigured()) {
-    generated = await tryOllama() || [];
-  }
-  if (!Array.isArray(generated) || generated.length === 0) {
-    const pythonRows = await tryPythonEngine();
-    if (pythonRows) {
-      generated = pythonRows;
-    } else if (!isOllamaConfigured()) {
-      // Last resort: try Ollama even if not configured as primary
-      generated = await tryOllama() || [];
-    }
+    } catch { /* ignore */ }
   }
 
   if (!Array.isArray(generated) || generated.length === 0) {
