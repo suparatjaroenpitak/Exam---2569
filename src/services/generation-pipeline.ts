@@ -59,7 +59,6 @@ export async function generateAndSave(payload: { category: string; subcategory: 
   await report(8, "preparing", `Preparing ${payload.count} questions for ${payload.subcategory}`);
   const maxAttempts = 2;
   let generated: any[] = [];
-  let lastGenerationError: Error | null = null;
   const existingRows = await loadQuestions();
   const hasRemotePythonValidation = /^https?:\/\//i.test(env.pythonAiUrl);
   const cachedRows = existingRows.filter((row) => row.subject === payload.category && row.subcategory === payload.subcategory && row.difficulty === payload.difficulty);
@@ -84,50 +83,57 @@ export async function generateAndSave(payload: { category: string; subcategory: 
 
   const generationTarget = Math.max(1, requestedCount - cachedRows.length);
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    await report(12 + (attempt - 1) * 8, "generating", `Generating draft questions${maxAttempts > 1 ? ` (attempt ${attempt}/${maxAttempts})` : ""}`);
-    try {
-      generated = await generateWithPythonEngine({
-        category: payload.category,
-        subcategory: payload.subcategory,
-        count: generationTarget,
-        difficulty: payload.difficulty,
-        offset: 0
-      });
-      lastGenerationError = null;
-    } catch (error) {
-      lastGenerationError = error instanceof Error ? error : new Error(String(error));
-      generated = [];
-    }
-
-    if (Array.isArray(generated) && generated.length > 0) break;
-    await new Promise((res) => setTimeout(res, 100));
-  }
-  if (!Array.isArray(generated) || generated.length === 0) {
-    if (isOllamaConfigured()) {
-      await report(30, "generating", "Python engine failed; trying Ollama AI on Colab...");
+  async function tryPythonEngine() {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await report(12 + (attempt - 1) * 8, "generating", `Generating draft questions${maxAttempts > 1 ? ` (attempt ${attempt}/${maxAttempts})` : ""}`);
       try {
-        const ollamaRows = await generateQuestionsWithOllama({
-          category: payload.category as any,
-          subcategory: payload.subcategory as any,
+        const rows = await generateWithPythonEngine({
+          category: payload.category,
+          subcategory: payload.subcategory,
           count: generationTarget,
-          difficulty: payload.difficulty as any
+          difficulty: payload.difficulty,
+          offset: 0
         });
-        if (Array.isArray(ollamaRows) && ollamaRows.length > 0) {
-          generated = ollamaRows.map((row) => ({
-            ...row,
-            source: "llm",
-            generation_mode: "ollama"
-          }));
-        }
-      } catch (ollamaErr) {
-        lastGenerationError = ollamaErr instanceof Error ? ollamaErr : new Error(String(ollamaErr));
+        if (Array.isArray(rows) && rows.length > 0) return rows;
+      } catch { /* try next */ }
+      await new Promise((res) => setTimeout(res, 100));
+    }
+    return null;
+  }
+
+  async function tryOllama() {
+    if (!isOllamaConfigured()) return null;
+    await report(25, "generating", "Generating with Ollama AI on Colab...");
+    try {
+      const rows = await generateQuestionsWithOllama({
+        category: payload.category as any,
+        subcategory: payload.subcategory as any,
+        count: generationTarget,
+        difficulty: payload.difficulty as any
+      });
+      if (Array.isArray(rows) && rows.length > 0) {
+        return rows.map((row) => ({ ...row, source: "llm", generation_mode: "ollama" }));
       }
+    } catch { /* fall through */ }
+    return null;
+  }
+
+  // Try Ollama first when configured (faster), fall back to Python engine
+  if (isOllamaConfigured()) {
+    generated = await tryOllama() || [];
+  }
+  if (!Array.isArray(generated) || generated.length === 0) {
+    const pythonRows = await tryPythonEngine();
+    if (pythonRows) {
+      generated = pythonRows;
+    } else if (!isOllamaConfigured()) {
+      // Last resort: try Ollama even if not configured as primary
+      generated = await tryOllama() || [];
     }
   }
 
   if (!Array.isArray(generated) || generated.length === 0) {
-    throw new Error(lastGenerationError?.message || "Python AI engine returned no questions.");
+    throw new Error("All generation backends returned no questions.");
   }
 
   await report(42, "validating", `Validating ${generated.length} generated questions`);
