@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { classifyByKeywords, estimateDifficulty, parseCandidate, splitPdfIntoQuestionCandidates } from "@/lib/pdf-question-parser";
 import type { AnswerKey, ExamCategory, ExamSubcategory, QuestionDifficulty, QuestionRecord } from "@/lib/types";
 import { generateWithPythonEngine } from "@/services/python-ai-service";
+import { generateQuestionsWithOllama, extractQuestionsWithOllama, isOllamaConfigured } from "@/services/ollama-service";
 
 const THAI_GENERATOR_NAME = "Mistral AI";
 
@@ -625,14 +626,25 @@ export async function generateQuestionsWithWangchanNlp(input: {
     }
   };
 
+  // Try Ollama first if configured (runs on Google Colab)
+  if (isOllamaConfigured()) {
+    for (let attempt = 0; attempt < 3 && collected.length < input.count; attempt++) {
+      try {
+        const rows = await generateQuestionsWithOllama(input);
+        appendUnique(rows);
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+
   // Try multiple model attempts to get enough items in the requested subcategory.
-  const maxModelAttempts = 5;
+  const maxModelAttempts = isOllamaConfigured() ? 2 : 5;
   for (let attempt = 0; attempt < maxModelAttempts && collected.length < input.count; attempt++) {
     try {
       const rows = await generateQuestionsWithThaiModel(input);
       appendUnique(rows);
     } catch (e) {
-      // If model call fails or parsing failed, continue to next attempt so we can retry
       continue;
     }
   }
@@ -778,6 +790,16 @@ export async function extractQuestionsFromPdfWithWangchanNlp(input: {
       if (validated.valid) {
         collected.push(validated.question);
       }
+    }
+  }
+
+  // If parser found nothing and Ollama is available, try AI extraction via Colab
+  if (collected.length === 0 && isOllamaConfigured()) {
+    try {
+      const ollamaRows = await extractQuestionsWithOllama(input.text, maxQuestions);
+      collected.push(...ollamaRows);
+    } catch (e) {
+      // non-fatal
     }
   }
 

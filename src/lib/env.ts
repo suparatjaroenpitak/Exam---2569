@@ -39,5 +39,10 @@ export const env = {
   mistralBaseUrl: process.env.MISTRAL_BASE_URL || process.env.THAI_GENERATOR_BASE_URL || "https://api-inference.huggingface.co/models",
   mistralModel: process.env.MISTRAL_MODEL || process.env.TRANSFORMERS_MODEL || process.env.THAI_GENERATOR_MODEL || "Qwen/Qwen2.5-1.5B-Instruct",
   defaultAdminEmail: process.env.DEFAULT_ADMIN_EMAIL || "admin@example.com",
-  defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || "change-me-in-env"
+  defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || "change-me-in-env",
+
+  // Ollama configuration (Google Colab / local)
+  ollamaBaseUrl: process.env.OLLAMA_BASE_URL || "",
+  ollamaModel: process.env.OLLAMA_MODEL || "gemma2:2b",
+  enableOllama: process.env.ENABLE_OLLAMA === "1"
 };

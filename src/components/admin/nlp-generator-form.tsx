@@ -7,6 +7,7 @@ import { apiRequest } from "@/api/client";
 import { usePreferences } from "@/components/preferences-provider";
 import { DIFFICULTY_OPTIONS, EXAM_CATEGORIES, SUBJECT_SUBCATEGORIES } from "@/lib/constants";
 import { getCategoryLabel, getDifficultyLabel, getSubcategoryLabel, translateApiMessage } from "@/i18n";
+import { isOllamaConfigured } from "@/services/ollama-service";
 import type { ExamCategory, ExamSubcategory, QuestionDifficulty } from "@/lib/types";
 
 type GenerationJobResponse = {
@@ -150,6 +151,12 @@ export function NlpGeneratorForm() {
         <p className="theme-kicker text-xs font-semibold">{translate("admin.nlp-generator")}</p>
         <h3 className="mt-2 text-2xl font-semibold text-white">{translate("admin.create-nlp")}</h3>
       </div>
+      {isOllamaConfigured() ? (
+        <div className="mb-3 flex items-center gap-2 rounded-2xl bg-green-500/10 px-4 py-2 text-xs text-green-400">
+          <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
+          Ollama AI Connected ({isOllamaConfigured() ? "พร้อมใช้งาน" : "not configured"})
+        </div>
+      ) : null}
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-3">
           <label className="block">

@@ -4,6 +4,7 @@ import { appendQuestions, buildQuestionHash, loadQuestions } from "@/lib/prisma-
 import { appendGenerationLog } from "@/lib/generation-log";
 import { appendImportLog } from "@/lib/import-log";
 import { env } from "@/lib/env";
+import { generateQuestionsWithOllama, isOllamaConfigured } from "@/services/ollama-service";
 
 let isSaving = false;
 
@@ -102,6 +103,29 @@ export async function generateAndSave(payload: { category: string; subcategory: 
     if (Array.isArray(generated) && generated.length > 0) break;
     await new Promise((res) => setTimeout(res, 600));
   }
+  if (!Array.isArray(generated) || generated.length === 0) {
+    if (isOllamaConfigured()) {
+      await report(30, "generating", "Python engine failed; trying Ollama AI on Colab...");
+      try {
+        const ollamaRows = await generateQuestionsWithOllama({
+          category: payload.category as any,
+          subcategory: payload.subcategory as any,
+          count: generationTarget,
+          difficulty: payload.difficulty as any
+        });
+        if (Array.isArray(ollamaRows) && ollamaRows.length > 0) {
+          generated = ollamaRows.map((row) => ({
+            ...row,
+            source: "llm",
+            generation_mode: "ollama"
+          }));
+        }
+      } catch (ollamaErr) {
+        lastGenerationError = ollamaErr instanceof Error ? ollamaErr : new Error(String(ollamaErr));
+      }
+    }
+  }
+
   if (!Array.isArray(generated) || generated.length === 0) {
     throw new Error(lastGenerationError?.message || "Python AI engine returned no questions.");
   }
