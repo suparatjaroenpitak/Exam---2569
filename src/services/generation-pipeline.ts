@@ -85,35 +85,39 @@ export async function generateAndSave(payload: { category: string; subcategory: 
 
   await report(15, "generating", `Generating ${generationTarget} questions...`);
 
-  // Try Python engine (rule-based + CLI fallback when no server running)
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      generated = await generateWithPythonEngine({
-        category: payload.category,
-        subcategory: payload.subcategory,
-        count: generationTarget,
-        difficulty: payload.difficulty,
-        offset: 0
-      });
-      if (Array.isArray(generated) && generated.length > 0) break;
-    } catch { /* retry */ }
-    await new Promise((res) => setTimeout(res, 100));
+  // On production with Ollama configured, try Ollama first (faster, no Python dependency)
+  if (isOllamaConfigured()) {
+    await report(20, "generating", "Generating with Ollama AI on Colab...");
+    const ollamaRows = await generateQuestionsWithOllama({
+      category: payload.category as any,
+      subcategory: payload.subcategory as any,
+      count: generationTarget,
+      difficulty: payload.difficulty as any
+    });
+    if (Array.isArray(ollamaRows) && ollamaRows.length > 0) {
+      generated = ollamaRows.map((row) => ({ ...row, source: "llm", generation_mode: "ollama" }));
+    } else {
+      throw new Error("Ollama AI returned no questions. Check OLLAMA_BASE_URL and that the model is pulled on Colab.");
+    }
   }
 
-  // If Python returned nothing and Ollama is configured, try Ollama
-  if (isOllamaConfigured() && (!Array.isArray(generated) || generated.length === 0)) {
-    await report(25, "generating", "Trying Ollama AI on Colab...");
-    try {
-      const ollamaRows = await generateQuestionsWithOllama({
-        category: payload.category as any,
-        subcategory: payload.subcategory as any,
-        count: generationTarget,
-        difficulty: payload.difficulty as any
-      });
-      if (Array.isArray(ollamaRows) && ollamaRows.length > 0) {
-        generated = ollamaRows.map((row) => ({ ...row, source: "llm", generation_mode: "ollama" }));
+  // Try Python engine (rule-based + CLI fallback) when Ollama returned nothing
+  if (!Array.isArray(generated) || generated.length === 0) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        generated = await generateWithPythonEngine({
+          category: payload.category,
+          subcategory: payload.subcategory,
+          count: generationTarget,
+          difficulty: payload.difficulty,
+          offset: 0
+        });
+        if (Array.isArray(generated) && generated.length > 0) break;
+      } catch (pyErr) {
+        console.error(`Python engine attempt ${attempt} failed:`, pyErr);
       }
-    } catch { /* ignore */ }
+      await new Promise((res) => setTimeout(res, 100));
+    }
   }
 
   if (!Array.isArray(generated) || generated.length === 0) {
