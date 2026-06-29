@@ -186,15 +186,10 @@ export async function generateQuestionsWithOllama(input: GenerateInput): Promise
   }
   const prompt = buildGenerationPrompt(input);
   const maxTokens = Math.max(2048, input.count * 300);
-  try {
-    const raw = await callOllama(prompt, { temperature: 0.85, maxTokens });
-    const jsonStr = extractJsonPayload(raw);
-    const parsed = JSON.parse(jsonStr);
-    return normalizeRows(input, parsed).slice(0, input.count);
-  } catch (err) {
-    console.error("Ollama generation failed:", err);
-    return [];
-  }
+  const raw = await callOllama(prompt, { temperature: 0.85, maxTokens });
+  const jsonStr = extractJsonPayload(raw);
+  const parsed = JSON.parse(jsonStr);
+  return normalizeRows(input, parsed).slice(0, input.count);
 }
 
 export async function extractQuestionsWithOllama(text: string, maxQuestions = 200): Promise<GeneratedRow[]> {
@@ -202,12 +197,17 @@ export async function extractQuestionsWithOllama(text: string, maxQuestions = 20
     return [];
   }
   const prompt = buildExtractionPrompt(text, maxQuestions);
+  const raw = await callOllama(prompt, { temperature: 0.3, maxTokens: Math.max(2048, maxQuestions * 200) });
+  let parsed: unknown;
   try {
-    const raw = await callOllama(prompt, { temperature: 0.3, maxTokens: Math.max(2048, maxQuestions * 200) });
     const jsonStr = extractJsonPayload(raw);
-    const parsed = JSON.parse(jsonStr);
-    if (!Array.isArray(parsed)) return [];
-    const seen = new Set<string>();
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const seen = new Set<string>();
+  try {
     return parsed.flatMap((item: Record<string, unknown>) => {
       if (!item || typeof item !== "object") return [];
       const choices = [
@@ -244,10 +244,7 @@ export async function extractQuestionsWithOllama(text: string, maxQuestions = 20
         source: "nlp"
       } as GeneratedRow];
     }).slice(0, maxQuestions);
-  } catch (err) {
-    console.error("Ollama extraction failed:", err);
-    return [];
-  }
+  } catch { return []; }
 }
 
 export function isOllamaConfigured(): boolean {
