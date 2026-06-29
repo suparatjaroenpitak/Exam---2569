@@ -5,9 +5,7 @@ import { type FormEvent, useRef, useState } from "react";
 
 import { usePreferences } from "@/components/preferences-provider";
 import { translateApiMessage } from "@/i18n";
-import { isOllamaConfigured } from "@/services/ollama-service";
-
-export function FileImportForm() {
+export function FileImportForm({ ollamaConfigured }: { ollamaConfigured?: boolean }) {
   const router = useRouter();
   const { locale, translate } = usePreferences();
   const formRef = useRef<HTMLFormElement>(null);
@@ -86,7 +84,7 @@ export function FileImportForm() {
               <span className="block text-white/60">{translate("admin.pdf-import-wangchan-help")}</span>
             </span>
           </label>
-          {isOllamaConfigured() && (
+          {ollamaConfigured && (
             <label className="flex items-start gap-3">
               <input
                 type="checkbox"

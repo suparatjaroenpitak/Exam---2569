@@ -7,7 +7,6 @@ import { apiRequest } from "@/api/client";
 import { usePreferences } from "@/components/preferences-provider";
 import { DIFFICULTY_OPTIONS, EXAM_CATEGORIES, SUBJECT_SUBCATEGORIES } from "@/lib/constants";
 import { getCategoryLabel, getDifficultyLabel, getSubcategoryLabel, translateApiMessage } from "@/i18n";
-import { isOllamaConfigured } from "@/services/ollama-service";
 import type { ExamCategory, ExamSubcategory, QuestionDifficulty } from "@/lib/types";
 
 type GenerationJobResponse = {
@@ -70,7 +69,7 @@ function translateStage(locale: string, stage: string, fallback: string) {
   }
 }
 
-export function NlpGeneratorForm() {
+export function NlpGeneratorForm({ ollamaConfigured }: { ollamaConfigured?: boolean }) {
   const router = useRouter();
   const { locale, translate } = usePreferences();
   const [category, setCategory] = useState<ExamCategory>(EXAM_CATEGORIES[0]);
@@ -151,10 +150,10 @@ export function NlpGeneratorForm() {
         <p className="theme-kicker text-xs font-semibold">{translate("admin.nlp-generator")}</p>
         <h3 className="mt-2 text-2xl font-semibold text-white">{translate("admin.create-nlp")}</h3>
       </div>
-      {isOllamaConfigured() ? (
+      {ollamaConfigured ? (
         <div className="mb-3 flex items-center gap-2 rounded-2xl bg-green-500/10 px-4 py-2 text-xs text-green-400">
           <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
-          Ollama AI Connected ({isOllamaConfigured() ? "พร้อมใช้งาน" : "not configured"})
+          Ollama AI Connected
         </div>
       ) : null}
       <form className="space-y-4" onSubmit={handleSubmit}>

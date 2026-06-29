@@ -5,6 +5,7 @@ import { FileImportForm } from "@/components/admin/file-import-form";
 import { QuestionBankList } from "@/components/admin/question-bank-list";
 import { requireAdminPage } from "@/lib/server-guards";
 import { getQuestionStats, getQuestions } from "@/services/question-service";
+import { isOllamaConfigured } from "@/services/ollama-service";
 
 export default async function AdminPage() {
   const user = await requireAdminPage();
@@ -22,8 +23,8 @@ export default async function AdminPage() {
       <div className="space-y-6">
         <AdminOverview stats={stats} />
         <div className="grid gap-6 xl:grid-cols-2">
-          <FileImportForm />
-          <NlpGeneratorForm />
+          <FileImportForm ollamaConfigured={isOllamaConfigured()} />
+          <NlpGeneratorForm ollamaConfigured={isOllamaConfigured()} />
         </div>
         <QuestionBankList questions={[...questions].reverse()} />
       </div>

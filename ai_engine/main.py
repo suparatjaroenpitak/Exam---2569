@@ -29,62 +29,6 @@ except ImportError:
         from validator import validate_question
 
 
-# Ollama integration (optional - connect to Ollama on Colab)
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "").rstrip("/")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma2:2b")
-ENABLE_OLLAMA = os.environ.get("ENABLE_OLLAMA", "0") == "1"
-
-
-def call_ollama(prompt: str, temperature: float = 0.8, max_tokens: int = 4096) -> dict[str, Any] | None:
-    if not OLLAMA_BASE_URL:
-        return None
-    import requests
-    try:
-        resp = requests.post(
-            f"{OLLAMA_BASE_URL}/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "stream": False,
-                "options": {"temperature": temperature, "num_predict": max_tokens}
-            },
-            timeout=120
-        )
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as exc:
-        print(f"Ollama call failed: {exc}", file=sys.stderr)
-        return None
-
-
-def ollama_generate_questions(subject: str, topic: str, difficulty: str, count: int) -> list[dict[str, str]]:
-    prompt = (
-        f"You are an expert Thai civil service exam author. "
-        f"Create {count} unique multiple-choice questions in Thai for category '{subject}' "
-        f"and subcategory '{topic}' at '{difficulty}' difficulty.\n"
-        "Each question must have 4 choices (choice_a, choice_b, choice_c, choice_d) "
-        "and one correct_answer (A/B/C/D). Include an explanation.\n"
-        "Return ONLY valid JSON array, no markdown.\n"
-        'Example: [{"question":"...","choice_a":"...","choice_b":"...","choice_c":"...","choice_d":"...","correct_answer":"A","explanation":"..."}]'
-    )
-    result = call_ollama(prompt, temperature=0.85, max_tokens=max(2048, count * 300))
-    if not result:
-        return []
-    content = (result.get("message") or {}).get("content") or result.get("response", "")
-    if not content:
-        return []
-    try:
-        import re
-        json_match = re.search(r"\[[\s\S]*\]", content)
-        if json_match:
-            rows = json.loads(json_match.group())
-            if isinstance(rows, list):
-                return rows[:count]
-    except (json.JSONDecodeError, Exception):
-        pass
-    return []
-
-
 app = FastAPI(title="Exam AI Engine", version="1.0.0")
 
 
@@ -128,31 +72,6 @@ def health() -> dict[str, str]:
 def generate(payload: GeneratePayload) -> dict[str, Any]:
     data = payload.model_dump()
     questions = generate_questions(data)
-    # If rule-based generator produced few questions and Ollama is configured, supplement
-    if ENABLE_OLLAMA and len(questions) < data.get("count", 1):
-        needed = data.get("count", 1) - len(questions)
-        ollama_rows = ollama_generate_questions(
-            data.get("category", ""), data.get("subcategory", ""),
-            data.get("difficulty", "medium"), needed
-        )
-        for row in ollama_rows:
-            if isinstance(row, dict) and row.get("question"):
-                row["source"] = "ollama"
-                row["generation_mode"] = "ollama-ai"
-                questions.append(row)
-    return {"questions": questions, "generated": len(questions)}
-
-
-@app.post("/generate/ollama")
-def generate_ollama(payload: GeneratePayload) -> dict[str, Any]:
-    data = payload.model_dump()
-    questions = ollama_generate_questions(
-        data.get("category", ""), data.get("subcategory", ""),
-        data.get("difficulty", "medium"), data.get("count", 1)
-    )
-    for q in questions:
-        q["source"] = "ollama"
-        q["generation_mode"] = "ollama-ai"
     return {"questions": questions, "generated": len(questions)}
 
 
@@ -186,26 +105,6 @@ def validate_shape(payload: ValidatePayload) -> dict[str, Any]:
 def run_cli(command: str, payload: dict[str, Any]) -> dict[str, Any]:
     if command == "generate":
         questions = generate_questions(payload)
-        if ENABLE_OLLAMA and len(questions) < payload.get("count", 1):
-            needed = payload.get("count", 1) - len(questions)
-            ollama_rows = ollama_generate_questions(
-                payload.get("category", ""), payload.get("subcategory", ""),
-                payload.get("difficulty", "medium"), needed
-            )
-            for row in ollama_rows:
-                if isinstance(row, dict) and row.get("question"):
-                    row["source"] = "ollama"
-                    row["generation_mode"] = "ollama-ai"
-                    questions.append(row)
-        return {"questions": questions, "generated": len(questions)}
-    if command == "ollama-generate":
-        questions = ollama_generate_questions(
-            payload.get("category", ""), payload.get("subcategory", ""),
-            payload.get("difficulty", "medium"), payload.get("count", 1)
-        )
-        for q in questions:
-            q["source"] = "ollama"
-            q["generation_mode"] = "ollama-ai"
         return {"questions": questions, "generated": len(questions)}
     if command == "topic":
         predicted, score = classify_topic(payload.get("text", ""))
